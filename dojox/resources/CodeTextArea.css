@@ -1,0 +1,41 @@
+.dojoCodeTextArea{
+	position:relative;
+	left:0;
+	overflow:scroll;
+	border:1px solid #ccc;
+	width:100%;
+	height:100px;
+	font:13px monospace;
+	padding:0;
+}
+.codeTextAreaLine{
+	font:13px monospace;
+}
+.codeTextAreaLine span{
+	height:13px;
+	white-space:pre;
+}
+.dojoCodeTextAreaHL{
+	width:100%;
+	background:#e5f5f5;
+	z-index:10;
+}
+.dojoCodeTextAreaLines{
+	z-index:100;
+	position:absolute;
+	top:0;
+	left:0;
+	height:100%;
+	width:100%;
+}
+.dojoCodeTextAreaLines span{
+	font:13px monospace;
+}
+.dojoCodeTextAreaCaret{
+	position:absolute;
+	top:0;
+	left:0;
+	backgroundColor:transparent;
+	color:#c6ffc6;
+	border-left:2px solid black;
+}

@@ -1,0 +1,29 @@
+{
+	"window": {
+        className: "browser"
+    },
+    "dojo": {
+        className: "dojo"
+    },
+    "this": {
+        className: "keyword"
+    },
+    "blur": {
+        className: "event"
+    },
+    "focus": {
+        className: "event"
+    },
+	"document": {
+        className: "keyword"
+    },
+    "true": {
+        className: "boolean"
+    },
+    "false": {
+        className: "boolean"
+    },
+    "function": {
+        className: "keyword"
+    }
+}
