@@ -1,0 +1,44 @@
+#footer{
+	height:26px;
+	background:#ddd;
+	border-top:1px solid #999;
+}
+#menuBar{
+	background:#ddd;
+	border-bottom: 1px solid #999;
+	font: 12px arial;
+	color: black;
+	padding: 0 10px;
+	height:22px;
+	line-height:26px;
+}
+#menuBar span{
+	text-transform: capitalize;
+	margin: 0 10px;
+}
+#footer #coords{
+	position:absolute;
+	border-top:1px solid #888;
+	border-right:1px solid #fff;
+	border-bottom:1px solid #fff;
+	border-left:1px solid #888;
+	right: 300px;
+	top:3px;
+	width:80px;
+	height:19px;
+	padding:0;
+	vertical-align:middle;
+}
+#footer #coords div{
+	text-align:center;
+	font:11px verdana;
+	margin-top:4px;
+}
+.keyword{
+	color:blue;
+}
+.constant{
+	color:green;
+	font-style:italic;/*mmm...*/
+	text-decoration:underline;
+}
