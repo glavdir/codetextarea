@@ -2,7 +2,7 @@
 	Adds cosmetic styling to Dijit.  Users may swap with a custom theme CSS file.
 */
 
-@import url("../dijit.css");
+@import url("../dijit_cpu_safe.css");
 
 
 .dj_safari .not .dijitPopup {
