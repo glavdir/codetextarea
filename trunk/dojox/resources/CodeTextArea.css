@@ -39,3 +39,6 @@
 	color:#c6ffc6;
 	border-left:2px solid black;
 }
+input.suggester{
+	font:13px monospace;
+}
