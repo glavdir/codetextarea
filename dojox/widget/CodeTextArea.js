@@ -63,18 +63,7 @@ dojo.declare(
         _blockedKeyCombinations: {},
         _preventLoops: false,
         postCreate: function(){
-            //________________________
             this.init();
-//            var field = document.createElement("input");
-//            field.type = "text";
-//            field.value = "";
-//            field.style.position = "absolute";
-//            field.style.top = "50px";
-//            field.style.left = "500px";
-//            field.style.visibility="hidden";
-//            field.id = "field";
-//            dojo.body().appendChild(field);
-            //________________________
             this.loadDictionary(this.autocompleteUrl, dojo.hitch(this, this._autocompleteFiller));
             this.loadDictionary(this.colorsUrl, dojo.hitch(this, this._colorsFiller));
             this.loadPlugins();
@@ -84,9 +73,9 @@ dojo.declare(
             this._initializeClipboard();
             this._initializeSuggestionsPopup();
             this._initializeRange();
+
             // initial status
             this._command = "";
-
 
             this.attachEvents();
             document.body.focus();
@@ -101,38 +90,14 @@ dojo.declare(
             this._caret.style.border = "1px solid red";
             this._caret.style.right = "500px";
             document.body.appendChild(this._caret);    
-            
-            
-            // IE bugs: CPU at 100%
-//            var result = "";
-//            for(var evts in this.domNode){
-//				if(evts.indexOf("onmouse")!=-1){
-//					result += evts + this.domNode[evts] + "\n";
-//				}            	
-//            }
-//            window.alert(result);
         },
         _initializeSuggestionsPopup: function(){
-//            this._suggestionsPopup = document.createElement("div");
             var _comboNode = document.createElement("div");
             _comboNode.style.position = "absolute";
             _comboNode.style.top = "0";
             _comboNode.style.left = "0";
             _comboNode.style.display = "none";
             dojo.body().appendChild(_comboNode);
-//            dojo.style(this._suggestionsPopup, "display", "none");
-//            var _suggestionsContainer = document.createElement("table");
-//            this._suggestionsList = document.createElement("tbody");
-//            _suggestionsContainer.appendChild(this._suggestionsList);
-//            this._suggestionsPopup.appendChild(_suggestionsContainer);
-//            this._suggestionsPopup.appendChild(_suggestionsContainer);
-//            this._suggestionsPopup.style.display = "none";
-//            this._suggestionsPopup.style.position = "absolute";
-//            this._suggestionsPopup.style.top = "0";
-//            this._suggestionsPopup.style.left = "0";
-//            dojo.body().appendChild(this._suggestionsPopup);
-//            this.domNode.appendChild(this._suggestionsPopup);
-//            this._suggestionsPopup.innerHTML = "<div dojoType='dijit.menuItem'>ciao</div>";
             var store = new dojo.data.ItemFileReadStore({url: this.autocompleteUrl });
             
             this.suggestionsCombo = new dijit.form.ComboBox({
@@ -145,10 +110,9 @@ dojo.declare(
 			this.suggestionsCombo.domNode.style.position = "absolute";
 			this.suggestionsCombo.domNode.style.display = "none";
 			this.suggestionsCombo.domNode.style.zIndex = "100";
+            this.suggestionsCombo.textbox.style.display = "inline"; // added 10/03/2007
             dojo.connect(this.suggestionsCombo, "onkeyup", dojo.hitch(this, this.autocomplete));
-//            this.suggestionsCombo.nodeWithBorder.style.padding = "0";
             dojo.addClass(this.suggestionsCombo.textbox, "suggester");
-//            dojo.connect(this.suggestionsCombo, "onChange", console.debug("changed!"));
         },
         _initializeInternals: function(){
             this.commands = {
@@ -163,10 +127,6 @@ dojo.declare(
             this._clipboard.style.left = "-100px";
             this._clipboard.style.width = "0";
             this._clipboard.style.height = "0";
-//            this._clipboard.style.top = "100px";
-//            this._clipboard.style.left = "500px";
-//            this._clipboard.style.width = "400px";
-//            this._clipboard.style.height = "100px";
             document.body.appendChild(this._clipboard);
             console.debug("clipboard initialized");
         },
@@ -234,37 +194,11 @@ dojo.declare(
                 break;
             }
         },
-        keyDownHandler: function(evt){
-            evt = dojo.fixEvent(evt||window.event);
-            var keyCode = evt.keyCode;
-            var charCode = evt.charCode;
-            var resCode = keyCode||charCode;
-            var dk = dojo.keys;
-            switch(resCode){
-                case dk.CTRL:
-//                    console.debug("keyDownHandler CTRL");
-                break;
-                
-                default:
-                break;
-            }
-
-
-//            console.debug("1-> charCode/keyCode: "+evt.charCode+"/"+evt.keyCode);
-//            for(var j in evt){
-//                console.debug(j + " --> " + evt[j]);
-//            }
-//            console.debug("______________________________");
-//            console.debug("keyDownHandler: " + this._caret.value);
-        },
-        ctrlHandler: function(code){
-//            console.debug("ctrlHandler, charCode: " + code);
-        },
         _initializeRange: function(){
             this._range = document.createRange ? document.createRange() : null;
         },
         selectNode: function(node){
-            
+            // TODO
         },
         keyPressHandler: function(evt){
             if (this._preventLoops){
@@ -381,10 +315,6 @@ dojo.declare(
                     break;
                 case dk.RIGHT_WINDOW:
                     break;
-//                case dk.TAB:
-//                    evt.preventDefault();
-//                    dojo.stopEvent(evt);
-//                    break;
                 case 99: // c
                     if(!evt.ctrlKey){
                         this._specialKeyPressed = false;
@@ -552,19 +482,13 @@ dojo.declare(
         setCurrentToken: function(){
             // find the currentToken
             var x = this.x;
-//            console.debug("this.x: " + this.x);
-//            console.debug("this.y: " + this.y);
             this.currentLine = this.lines.getElementsByTagName("div")[this.y];
-//            console.debug(this.currentLine);
             var tokens = this.currentLine.getElementsByTagName("span");
             var lastChar = 0;
             var firstChar = 0;
             var tokensLength = tokens.length;
             for(var i = 0; i < tokensLength; i++){
                 firstChar = lastChar;
-                
-//                console.debug("tokens[i]type = " + tokens[i].getAttribute("tokenType"));
-//                console.debug("tokens[i] = " + tokens[i].firstChild.data + "|");
                 lastChar += tokens[i].firstChild.data.length;// + 1; 
                 if(x < lastChar){
                     this.currentToken = tokens[i];
@@ -573,9 +497,6 @@ dojo.declare(
                     break;
                 }
             }
-//            dojo.byId("field").value = this.currentToken.firstChild.data;
-//          dojo.byId("field").value = this.caretIndex;
-//            dojo.byId("field").value = dojo.dom.nextElement(this.currentToken) ? "next exists" : "";
         },
         getCaretPosition: function(){
             return {x: this.x, y: this.y};
@@ -593,7 +514,6 @@ dojo.declare(
 //            var node = this._caret;
             
             this._eventHandlers.push(dojo.connect(node, "onkeypress", this, "keyPressHandler"));
-//                dojo.connect(node, "onkeydown", this, "keyDownHandler");
             this._eventHandlers.push(dojo.connect(node, "onkeyup", this, "keyUpHandler"));
         },
         detachEvents: function(){
@@ -602,8 +522,6 @@ dojo.declare(
             }
             this._eventHandlers.length = 0;
         },
-        onMouseDown: function(e){
-        },  
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e);
 //            console.debug("evt.layerX: " + evt.layerX);
@@ -650,8 +568,6 @@ dojo.declare(
                 var line;
                 if(i){
                     this.splitLineAtCaret();
-//                    line = this.addNewLine("end");
-//                    this.setCaretPosition(0, this.y+1);
                 }else{
                     line = this.currentLine;
                 }
@@ -665,7 +581,7 @@ dojo.declare(
               terminatorToken.setAttribute("tokenType", "line-terminator");
               terminatorToken.style.visibility="hidden";
 //              terminatorToken.appendChild(document.createTextNode("\u00b6"));
-//              terminatorToken.appendChild(document.createTextNode("\u000D"));
+//              terminatorToken.appendChild(document.createTextNode("\u000D")); <-- better solution, but IE...
               terminatorToken.appendChild(document.createTextNode("#"));
 
 //              terminatorToken.appendChild(document.createTextNode(" "));
@@ -741,7 +657,6 @@ dojo.declare(
                 // *************************************************************
                 // 2) between two tokens
                 // *************************************************************
-                //
                 var _prev = this.currentToken.previousSibling;
                 var _targetToken;
                 if(_prev && _prev.getAttribute("tokenType") == tokenType){
@@ -857,35 +772,8 @@ dojo.declare(
 				
 				// END new solution 09-23-2007
 
-				// START old solution
-//				if(tokens){ 
-//					if(i){
-//						_parsedContent += "<span style=\"visibility:hidden\" " +
-//								"tokenType=\"line-terminator\"></span>" +
-//								"</div><div class=\"codeTextAreaLine\">";
-//					}
-//					for(var j = 0; j < tokens.length; j++){
-//						var token = tokens[j];
-//			            if(token.charAt(0) == "."){
-//			                tokenType = "context-separator";
-//			            }else if(token.charAt(0) == " "){
-//			                tokenType = "separator";
-//			            }else{
-//			                tokenType = "word";
-//			            }
-//						var cDict = this.colorsDictionary;
-//						var _class = (token in cDict) ? cDict[token].className : "";
-//						_parsedContent += "<span class=\"" + _class + "\"" + 
-//							" tokenType=\"" + tokenType + "\">" 
-//							+ token + "</span>";
-//					}
-//				}				
-				// END old solution
             } // end rows cycle
             this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
-//            window.alert(_firstFragment);
-//            window.alert(_parsedContent);
-//            window.alert(_lastFragment);
 			this.currentToken = _savedCurrentToken;
 			this.setCurrentToken();
         },
@@ -927,8 +815,6 @@ dojo.declare(
         createPopup: function(/* object literal */ items){
             var _items = [];
             for(var i in items){
-                var _itemToAdd = document.createElement("div");
-                _itemToAdd.appendChild(document.createTextNode(i));
                 _items.push({ value: i, name: i });
             }
             
@@ -944,19 +830,15 @@ dojo.declare(
                 _targetToken = this.currentToken.previousSibling;
                 _toComplete = _targetToken.firstChild.data;                
             }
-//            _targetToken.style.visibility = "hidden";
             if(_targetToken != this.caret){
                 _toComplete = _targetToken.firstChild.data;
             }
             this._targetToken = _targetToken;
             this.suggestionsCombo.setDisplayedValue(_toComplete);
-//            console.debug(" ---> "+ this.suggestionsCombo.getValue());
-//            console.debug("last: " + this.suggestionsCombo._lastDisplayedValue);
-//            console.debug("_toComplete: " + _toComplete);
             this.suggestionsCombo.domNode.style.display = "block";
             dijit.placeOnScreenAroundElement(this.suggestionsCombo.domNode, _targetToken, {'TL' : 'TL', 'TR' : 'TR'});
             this.suggestionsCombo.focus();
-//			console.debug("getvalue: " + this.suggestionsCombo.getValue());
+
             // bill: can you make _startSearch public? pleeeease! ^__^
             this.suggestionsCombo._startSearch(this.suggestionsCombo.getValue());
         },
@@ -972,6 +854,41 @@ dojo.declare(
             };
             
         },
+        autocomplete: function(evt){
+            evt = dojo.fixEvent(evt||window.event);
+            var keyCode = evt.keyCode;
+            var charCode = evt.charCode;
+            var resCode = keyCode||charCode;
+            var _targetToken = this._targetToken;
+            if(resCode == dojo.keys.ENTER || resCode == dojo.keys.ESCAPE){
+                this.suggestionsCombo.domNode.style.display = "none";
+				this.suggestionsCombo.textbox.blur(); // Opera and Safari
+                if(_targetToken != this.caret){
+                    // move the caret after the .
+                    var _yShift = this.caretIndex ? this.caretIndex : _targetToken.firstChild.data.length;  
+                    this.moveCaretBy(-(_yShift), 0); // ERROR HERE!!!!!
+                    _targetToken.firstChild.data = "";
+                }
+                this.write(this.suggestionsCombo.getValue(), true);
+//                this.suggestionsCombo.setDisplayedValue("");
+                this.suggestionsCombo.textbox.setAttribute("valuenow", "");
+                this.attachEvents();
+            }
+        },
+        loadPlugins: function(){
+            var plugins = this.plugins.split(" ");
+            for(var i = 0; i < plugins.length; i++){
+                try{
+                    if(plugins[i]){
+                        dojo.require("dojox.widget._codeTextArea.plugins." + plugins[i]);
+                        dojo.hitch(this, dojox.widget._codeTextArea.plugins[plugins[i]].startup)();
+                    }
+                }catch(error){
+                    console.debug("plugin \"" + plugins[i] + "\" not found");
+                }                
+            }
+        },
+        /* private functions */
         _getTargetToken: function(/*token*/ startToken){
             /* REFACTOR THIS METHOD!! */
             var _previousToken = startToken.previousSibling;
@@ -993,52 +910,6 @@ dojo.declare(
             }
             return _targetToken;
         },
-        autocomplete: function(evt){
-            evt = dojo.fixEvent(evt||window.event);
-            var keyCode = evt.keyCode;
-            var charCode = evt.charCode;
-            var resCode = keyCode||charCode;
-//            console.debug("AUTOCOMPLETE: resCode --> " + resCode);
-            var _targetToken = this._targetToken;
-            if(resCode == dojo.keys.ENTER || resCode == dojo.keys.ESCAPE){
-                this.suggestionsCombo.domNode.style.display = "none";
-				this.suggestionsCombo.textbox.blur(); // Opera and Safari
-                if(_targetToken != this.caret){
-                    // move the caret after the .
-                    var _yShift = this.caretIndex ? this.caretIndex : _targetToken.firstChild.data.length;  
-                    this.moveCaretBy(-(_yShift), 0); // ERROR HERE!!!!!
-                    _targetToken.firstChild.data = "";
-                }
-                this.write(this.suggestionsCombo.getValue(), true);
-//                this.suggestionsCombo.setDisplayedValue("");
-                this.suggestionsCombo.textbox.setAttribute("valuenow", "");
-                this.attachEvents();
-//                break;
-//                case dojo.keys.ESCAPE:
-//                    this.suggestionsCombo.domNode.style.display = "none";
-//                    if(_targetToken != this.caret){
-//                        _targetToken.firstChild.data = "";
-//                    }
-//                    this.attachEvents();
-//                break;
-//                default:
-//                break;
-            }
-        },
-        loadPlugins: function(){
-            var plugins = this.plugins.split(" ");
-            for(var i = 0; i < plugins.length; i++){
-                try{
-                    if(plugins[i]){
-                        dojo.require("dojox.widget._codeTextArea.plugins." + plugins[i]);
-                        dojo.hitch(this, dojox.widget._codeTextArea.plugins[plugins[i]].startup)();
-                    }
-                }catch(error){
-                    console.debug("plugin \"" + plugins[i] + "\" not found");
-                }                
-            }
-        },
-        /* private functions */
         _initializeDoc: function(){
             var newLine = this.createLine();
             this.lines.appendChild(newLine);
