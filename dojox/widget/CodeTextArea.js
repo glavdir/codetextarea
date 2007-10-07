@@ -147,7 +147,7 @@ dojo.declare(
                 handleAs: "json-comment-optional"
             };
             var getHandler = dojo.xhrGet(getArgs);
-            getHandler.addCallback(function(result) {
+            getHandler.addCallback(function(result){
                 dojo.hitch(_self, callBack(result));
             });
             getHandler.addErrback(function(err) { _self._dictionaryLoadError (err); });
@@ -207,7 +207,7 @@ dojo.declare(
             }
             this._specialKeyPressed = true;//IE
             evt = dojo.fixEvent(evt||window.event);
-            dojo.publish("CodeTextArea::KeyPressed", [{source:this,evt:evt}]);
+            dojo.publish(this.id + "::KeyPressed", [{source:this,evt:evt}]);
             var keyCode = evt.keyCode;
             var charCode = evt.charCode;
 //            console.debug("2-> charCode/keyCode: "+evt.charCode+"/"+evt.keyCode);
@@ -477,7 +477,8 @@ dojo.declare(
             }else if(_xPx < this.domNode.scrollLeft){
                 this.domNode.scrollLeft = _xPx;
             }
-            dojo.publish("CodeTextArea::CaretMove", [{x:x + 1,y:y + 1}]);
+            
+            dojo.publish(this.id + "::CaretMove", [{x:x + 1,y:y + 1}]);
         },
         setCurrentToken: function(){
             // find the currentToken
@@ -817,9 +818,9 @@ dojo.declare(
             for(var i in items){
                 _items.push({ value: i, name: i });
             }
-            
+            // HERE!
             this.suggestionsCombo.store = 
-                new dojo.data.ItemFileReadStore({data: {identifier:this.widgetId, items:_items}});
+                new dojo.data.ItemFileReadStore({data: {items:_items}});
             var _self = this;
             
             var _toComplete = "";
@@ -881,7 +882,7 @@ dojo.declare(
                 try{
                     if(plugins[i]){
                         dojo.require("dojox.widget._codeTextArea.plugins." + plugins[i]);
-                        dojo.hitch(this, dojox.widget._codeTextArea.plugins[plugins[i]].startup)();
+                        dojox.widget._codeTextArea.plugins[plugins[i]].startup({source:this});
                     }
                 }catch(error){
                     console.debug("plugin \"" + plugins[i] + "\" not found");

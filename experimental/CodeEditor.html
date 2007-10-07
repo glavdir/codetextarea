@@ -16,7 +16,7 @@
 	    function writePosition(position){
 	    	dojo.byId("coords").firstChild.innerHTML = position.x+":"+position.y;
 	    }
-    	dojo.subscribe("CodeTextArea::CaretMove", writePosition);
+    	dojo.subscribe("cta::CaretMove", writePosition);
 
 	    /*dojo.addOnLoad(start);
 	    function start(){

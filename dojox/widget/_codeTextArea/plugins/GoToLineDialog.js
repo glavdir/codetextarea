@@ -1,11 +1,12 @@
 dojo.provide("dojox.widget._codeTextArea.plugins.GoToLineDialog");
 dojo.require("dijit.Dialog");
 
-dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(){
-        dojo.subscribe("CodeTextArea::KeyPressed", 
-        function(args){
-            var evt = args.evt;
-            var source = args.source;
+dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
+        var source = args.source;
+        dojo.subscribe(source.id + "::KeyPressed", 
+        function(topicArgs){
+//	        var source = topicArgs.source;
+            var evt = topicArgs.evt;
             if(evt.ctrlKey && evt.charCode == 108){ // ctrl + l (lowercase L)
                 if(!this._goToLineDialog){
 //                    source._blockedKeyCombinations["CTRL+l"] = true;
