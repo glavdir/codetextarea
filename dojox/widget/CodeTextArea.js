@@ -174,7 +174,9 @@ dojo.declare(
                 case cmd.PASTE:
 //                    this.paste(this._clipboard.value);
 //                    this.writeFast();
+					this.detachEvents();
                     this.massiveWrite(this._clipboard.value);
+                    this.attachEvents();
                 break;
                 default:
                 break;
@@ -382,18 +384,16 @@ dojo.declare(
                 _currentToken.parentNode.removeChild(_currentToken);
             }
 
-            this.setCurrentToken();
+            this.setCurrentTokenAtCaret();
 
             if(_previousTokenType == "line-terminator"){ 
                 this.mergeLinesAtCaret(); 
             }
             _currentToken = this.currentToken;
             var _prevToken = _currentToken.previousSibling;
-            if(_currentToken && _prevToken && _currentToken.getAttribute("tokenType") == _prevToken.getAttribute("tokenType")){
-                this.mergeTokens(_prevToken, _currentToken);
-                this.setCurrentToken();
-                this.colorizeToken(this.currentToken);
-            }
+            this.mergeSimilarTokens(_prevToken, _currentToken);
+            this.setCurrentTokenAtCaret();
+            this.colorizeToken(this.currentToken);
         },
         mergeLinesAtCaret: function(){
             var _currentLine = this.currentLine;
@@ -407,12 +407,14 @@ dojo.declare(
                 }
                 _nextLine.parentNode.removeChild(_nextLine);
                 
-                this.setCurrentToken();
+                this.setCurrentTokenAtCaret();
             }
         },
-        mergeTokens: function(/*token*/ sourceToken, /*token*/ targetToken){
-            targetToken.firstChild.data = sourceToken.firstChild.data + targetToken.firstChild.data;
-            sourceToken.parentNode.removeChild(sourceToken);
+        mergeSimilarTokens: function(/*token*/ sourceToken, /*token*/ targetToken){
+        	if(targetToken && sourceToken && targetToken.getAttribute("tokenType") == sourceToken.getAttribute("tokenType")){
+	            targetToken.firstChild.data = sourceToken.firstChild.data + targetToken.firstChild.data;
+	            sourceToken.parentNode.removeChild(sourceToken);
+            }
         },
         getLine: function(/*int*/ y){
             return this.lines.getElementsByTagName("div")[y];
@@ -458,7 +460,7 @@ dojo.declare(
             this.currentLineHighLight.style.top = _yPx + "px";
             this.y = y;
             
-            this.setCurrentToken();
+            this.setCurrentTokenAtCaret();
             this.colorizeToken(this.currentToken);
             // scroll
             // scrollHeight grows...
@@ -480,7 +482,14 @@ dojo.declare(
             
             dojo.publish(this.id + "::CaretMove", [{x:x + 1,y:y + 1}]);
         },
-        setCurrentToken: function(){
+        setCaretPositionAtToken: function(/*token*/ targetToken){
+        	var _line = targetToken.parentNode;
+        	var _tokens = _line.getElementsByTagName("span");
+        	for(var i = 0; i < _tokens.length; i++){
+        		
+        	}
+        },
+        setCurrentTokenAtCaret: function(){
             // find the currentToken
             var x = this.x;
             this.currentLine = this.lines.getElementsByTagName("div")[this.y];
@@ -605,7 +614,8 @@ dojo.declare(
                 tokenType = "word";
             }
             if(substCaret){
-            	tokenType = "caret";
+//            	tokenType = "caret";
+				tokenType = substCaret;
 				wrapper = "i";
             }
             // parametrize this section [end]
@@ -685,29 +695,57 @@ dojo.declare(
             }
         },
         substCaretPosition: function(){
-            this.writeToken("-", false, true); // params: token, moveCaret, fixCaret
+            this.writeToken("-", false, "start"); // params: token, moveCaret, substCaret
+            this.writeToken("-", false, "end"); // params: token, moveCaret, substCaret
+        },
+        _getTextDelimiter: function(text){
+			var _index;
+//			console.debug("i: " + dojo.query(".dojoCodeTextAreaLines i"));
+            _index = text.indexOf("</i>");
+            if(_index == -1){
+            	_index = text.indexOf("</I>"); // IE fix
+            }
+            return _index + 4;
+        },
+        removeToken: function(/*token*/ targetToken){
+            targetToken.parentNode.removeChild(targetToken);
         },
         massiveWrite: function(content){
             // find the caret position
+            var _yIncrement = 0;
+            var _xIncrement = 0;
             var _savedCurrentToken = this.currentToken;
+            var _savedPreviousToken = this.previousToken;
             this.substCaretPosition();
 //			window.alert(this.currentToken.firstChild.data);
             var _initialContent = this.lines.innerHTML;
-            var _index = _initialContent.indexOf("<i");
-            if(_index == -1){
-            	_index = _initialContent.indexOf("<I"); // IE fix
-            }
-            this.currentToken.parentNode.removeChild(this.currentToken);
+
+            var _index = this._getTextDelimiter(_initialContent);
+            console.debug("this.currentToken: " + this.currentToken.getAttribute("tokenType"));
+
             var _initialContent = this.lines.innerHTML;
 
-            var _firstFragment = _initialContent.substring(0, _index); // ARGH! ERROR IN IE
+            var _firstFragment = _initialContent.substring(0, _index);
 //            window.alert("index: " + _index)
+			
+			// I must save the type of the previous and the next token
+			// in order to merge the new fragment
+			// 10-08-2007b
+			if(_savedPreviousToken){
+				console.debug("_savedPreviousToken: " + _savedPreviousToken.firstChild.data);
+			}
+			if(_savedCurrentToken){
+				console.debug("_savedCurrentToken: " + _savedCurrentToken.firstChild.data);
+			}
+			// 10-08-2007e
             var _lastFragment = _initialContent.substring(_index);
 
             var _parsedContent = "";
 //            var rows = content.split(/\n\r|\r\n|\r|\n/);
             var rows = content.split(/\n/);
-
+			
+			_yIncrement = rows.length - 1;
+			
             var tokens = [];            
 			var cDict = this.colorsDictionary;
             for(var i = 0; i < rows.length; i++){
@@ -759,6 +797,9 @@ dojo.declare(
 						if(_previousType){
 							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _previousType + "\">" + _workingToken + "</span>";
+							if(i == rows.length - 1){
+								_xIncrement += _workingToken.length;
+							}
 						}
 						_workingToken = _currentChar;
 						_previousType = _currentType;
@@ -775,8 +816,17 @@ dojo.declare(
 
             } // end rows cycle
             this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
+            var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
+            for(var i = 0; i < _delimiters.length; i++){
+            	var _currentDelimiter = _delimiters[i];
+            	if(_currentDelimiter.previousSibling && _currentDelimiter.nextSibling){
+            		this.mergeSimilarTokens( _currentDelimiter.nextSibling, _currentDelimiter.previousSibling);
+            	}
+				this.removeToken(_delimiters[i]);
+            }
 			this.currentToken = _savedCurrentToken;
-			this.setCurrentToken();
+			this.setCaretPosition(_xIncrement, this.y + _yIncrement);
+			this.setCurrentTokenAtCaret();
         },
         // handles the single token colorization
         colorizeToken: function(/*token*/ currentToken){
@@ -818,7 +868,6 @@ dojo.declare(
             for(var i in items){
                 _items.push({ value: i, name: i });
             }
-            // HERE!
             this.suggestionsCombo.store = 
                 new dojo.data.ItemFileReadStore({data: {items:_items}});
             var _self = this;
