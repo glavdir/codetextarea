@@ -93,6 +93,7 @@ dojo.declare(
             this._caret.style.top = "13px";
             this._caret.style.border = "1px solid red";
             this._caret.style.right = "500px";
+            this.setCaretPosition(0, 0); 
             document.body.appendChild(this._caret);    
         },
         _initializeSuggestionsPopup: function(){
@@ -521,7 +522,7 @@ dojo.declare(
         },
         onLoad: function(){
             this.codeTextAreaContainer.style.height = this.height + "px"; // height in lines
-            this.codeTextAreaContainer.style.width = this.width + "px"; 
+            this.codeTextAreaContainer.style.width = this.width + "px";
         },
         setDimensions: function(){
             this._caretWidth = dojo.contentBox(this.caret).w;
