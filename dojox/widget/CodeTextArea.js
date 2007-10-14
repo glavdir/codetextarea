@@ -11,11 +11,12 @@ dojo.declare(
     {
         templateString: 
         '<div class="dojoCodeTextArea" dojoAttachPoint="codeTextAreaContainer">'
+            +'<table class="dojoCodeWrapper"><tbody><tr><td><div class="dojoCodeTextAreaBand" dojoAttachPoint="leftBand"><div>1</div></div></td><td>'
             +'<div class="dojoCodeTextAreaHL" style="position:absolute;top:0;z-index:10" dojoAttachPoint="currentLineHighLight">'
                 +'<div dojoAttachPoint="caret" style="position:absolute;top:0;left:0" class="dojoCodeTextAreaCaret">&nbsp;'
                 +'</div>&nbsp;'
             +'</div>'
-            +'<div class="dojoCodeTextAreaLines" dojoAttachPoint="lines"></div>'
+            +'<div class="dojoCodeTextAreaLines" dojoAttachPoint="lines"></div></td></tr></tbody></table>'
         +'</div>',
         isContainer: true,
 
@@ -73,6 +74,9 @@ dojo.declare(
             this._initializeClipboard();
             this._initializeSuggestionsPopup();
             this._initializeRange();
+
+	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, this._addRowNumber));
+			dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, this._removeLineNumber));
 
             // initial status
             this._command = "";
@@ -395,6 +399,10 @@ dojo.declare(
             this.setCurrentTokenAtCaret();
             this.colorizeToken(this.currentToken);
         },
+        removeLine: function(/*line*/ targetLine){
+            targetLine.parentNode.removeChild(targetLine);
+            dojo.publish(this.id + "::removeLine", [{rows:1}]);
+        },
         mergeLinesAtCaret: function(){
             var _currentLine = this.currentLine;
             var y = this.y;
@@ -405,7 +413,7 @@ dojo.declare(
                     _currentLine.appendChild(_nextElement);
                     _nextElement = _nextLine.firstChild;
                 }
-                _nextLine.parentNode.removeChild(_nextLine);
+                this.removeLine(_nextLine);
                 
                 this.setCurrentTokenAtCaret();
             }
@@ -568,6 +576,7 @@ dojo.declare(
             }else{
                 dojo.place(newLine, lines[this.y], "after");
             }
+            dojo.publish(this.id + "::addNewLine", [{rows:1}]);
             return newLine;
         },
         write: function(/*String*/ text, /*Boolean*/ moveCaret){
@@ -811,11 +820,11 @@ dojo.declare(
 //				terminatorToken.appendChild(document.createTextNode("\u000D"));
 				
 				_parsedContent += _rowText;
-				
 				// END new solution 09-23-2007
 
             } // end rows cycle
             this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
+			this._addRowNumber({rows:_yIncrement});
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
             for(var i = 0; i < _delimiters.length; i++){
             	var _currentDelimiter = _delimiters[i];
@@ -964,6 +973,25 @@ dojo.declare(
             var newLine = this.createLine();
             this.lines.appendChild(newLine);
             this.currentLine = newLine;
+        },
+        _addRowNumber: function(/*integer*/ rowsToAdd){
+        	var _previousFragment = this.leftBand.innerHTML;
+        	var _offset = this.leftBand.getElementsByTagName("div").length + 1;
+        	var _rows = "";
+        	var _endCount = rowsToAdd.rows + _offset;
+        	for(var i = _offset; i < _endCount; i++){
+        		_rows += "<div>"+i+"</div>";
+        		console.debug("row added");
+        	}
+        	this.leftBand.innerHTML = _previousFragment + _rows;
+        },
+        _removeLineNumber: function(/*integer*/ rowsToRemove){
+        	var _endCount = rowsToRemove.rows;
+        	var lB = this.leftBand;
+        	for(var i = 0; i < _endCount; i++){
+        		lB.removeChild(lB.lastChild);
+        	}
         }
+        
     }
 );
