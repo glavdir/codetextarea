@@ -1,27 +1,21 @@
 {   
     children: {
     	"window": {
-    		className:"keyword",
+            link: {},
             children: {
                 "document": {
-                    className:"keyword",
                     children: {
                         "body": {
-                            className:"keyword"
                         },
                         "focus": {
-                            className:"keyword"
                         },
                         "forms": {
-                            className:"keyword"
                         },
                         "getElementById()": {
-                            className:"keyword"
                         }
                     }
                 }, 
                 "function": {
-                    className:"keyword"
                 }
             }
     	}
