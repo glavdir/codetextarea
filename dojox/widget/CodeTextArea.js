@@ -513,6 +513,8 @@ dojo.declare(
                     this.currentToken = tokens[i];
                     this.previousToken = i ? tokens[i-1] : null;
                     this.caretIndex = x - firstChar;
+                    console.debug("x: " + x);
+                    console.debug("firstChar: " + firstChar);
                     break;
                 }
             }
@@ -624,7 +626,6 @@ dojo.declare(
                 tokenType = "word";
             }
             if(substCaret){
-//            	tokenType = "caret";
 				tokenType = substCaret;
 				wrapper = "i";
             }
@@ -692,7 +693,6 @@ dojo.declare(
                     // create a new token
                     _targetToken = document.createElement(wrapper);
                     _targetToken.appendChild(document.createTextNode(content));
-//                    _targetToken.innerHTML = content; // NOOOOOOOOOOOO! error on IE! :@
                     _targetToken.setAttribute("tokenType", tokenType);
                     if(_prev){
                         dojo.place(_targetToken, _prev, "after");
@@ -925,13 +925,18 @@ dojo.declare(
 				this.suggestionsCombo.textbox.blur(); // Opera and Safari
                 if(_targetToken != this.caret){
                     // move the caret after the .
-                    var _yShift = this.caretIndex ? this.caretIndex : _targetToken.firstChild.data.length;  
-                    this.moveCaretBy(-(_yShift), 0); // ERROR HERE!!!!!
+                    var _xShift = 0;
+					if(this.caretIndex){
+						_xShift = this.caretIndex;
+					}else{
+	                    if(!(this._targetToken === this.currentToken)){
+							_xShift = _targetToken.firstChild.data.length;
+						}
+					}
+                    this.moveCaretBy(-(_xShift), 0);
                     _targetToken.firstChild.data = "";
                 }
                 this.write(this.suggestionsCombo.getValue(), true);
-//                this.suggestionsCombo.setDisplayedValue("");
-                this.suggestionsCombo.textbox.setAttribute("valuenow", "");
                 this.attachEvents();
             }
         },
