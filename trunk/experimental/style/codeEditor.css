@@ -26,9 +26,21 @@
 	margin-top:4px;
 }
 .dojoCodeTextAreaLines .browser{
-	color:navy;
-	font-weight:bold;
+	color:#00c;
+	font-weight:normal;
 	line-height:16px;
+}
+.dojoCodeTextAreaLines .dom-method{
+	color:#000;
+	font-weight:normal;
+	font-style:italic;
+	line-height:15px;
+}
+.dojoCodeTextAreaLines .dojo-method{
+	color:#663;
+	font-weight:normal;
+	font-style:italic;
+	line-height:15px;
 }
 .dojoCodeTextAreaLines .keyword{
 	color:blue;
@@ -44,6 +56,6 @@
 }
 .dojoCodeTextAreaLines .event{
 	color:green;
-	font-style:italic; /*mmm...*/
+	font-style:italic;
 	line-height:15px;
 }

@@ -155,10 +155,18 @@ dojo.declare(
             getHandler.addCallback(function(result){
                 dojo.hitch(_self, callBack(result));
             });
-            getHandler.addErrback(function(err) { _self._dictionaryLoadError (err); });
+            getHandler.addErrback(function(err){ _self._dictionaryLoadError (err); });
         },
         _colorsFiller: function(data){
-            this.colorsDictionary = data;
+        	var cDict = {};
+        	for(var i in data){
+        		var keys = i.split("|");
+        		for(var j = 0, k = keys.length; j < k; j++){
+        			cDict[keys[j]] = {};
+        			cDict[keys[j]].className = data[i].className;
+        		}
+        	}
+            this.colorsDictionary = cDict;
         },
         _autocompleteFiller: function(data){
             this.autocompleteDictionary = data;
@@ -513,8 +521,6 @@ dojo.declare(
                     this.currentToken = tokens[i];
                     this.previousToken = i ? tokens[i-1] : null;
                     this.caretIndex = x - firstChar;
-                    console.debug("x: " + x);
-                    console.debug("firstChar: " + firstChar);
                     break;
                 }
             }
@@ -563,7 +569,8 @@ dojo.declare(
         writeLine: function(/*String*/ text, /*Boolean*/ moveCaret){
             if(!text){ return; }
 //            var tokens = text.match(/\S+|\s+/g);            
-            var tokens = text.match(/\.+|[\S+|\s+]/g);            
+            //var tokens = text.match(/\.+|[\S+|\s+]/g);            
+            var tokens = text.match(/\.+|[\S+|\s+]|\(|\)|\[|\]/g);  
             var len = tokens.length;
             for(var i = 0; i < len; i++){
                 var token = tokens[i];
@@ -622,6 +629,8 @@ dojo.declare(
                 tokenType = "context-separator";
             }else if(content.charAt(0) == " "){
                 tokenType = "separator";
+            }else if(content.charAt(0) == "(" || content.charAt(0) == ")" || content.charAt(0) == "[" || content.charAt(0) == "]"){
+                tokenType = "parenthesis";
             }else{
                 tokenType = "word";
             }
@@ -727,7 +736,6 @@ dojo.declare(
             var _savedCurrentToken = this.currentToken;
             var _savedPreviousToken = this.previousToken;
             this.substCaretPosition();
-//			window.alert(this.currentToken.firstChild.data);
             var _initialContent = this.lines.innerHTML;
 
             var _index = this._getTextDelimiter(_initialContent);
@@ -736,7 +744,6 @@ dojo.declare(
             var _initialContent = this.lines.innerHTML;
 
             var _firstFragment = _initialContent.substring(0, _index);
-//            window.alert("index: " + _index)
 			
 			// I must save the type of the previous and the next token
 			// in order to merge the new fragment
@@ -790,6 +797,8 @@ dojo.declare(
 					}else if(_currentChar === " "){
 						_currentChar = "&nbsp;";
 						_currentType = "separator";
+					}else if(_currentChar === "(" || _currentChar === ")" || _currentChar === "[" || _currentChar === "]"){
+						_currentType = "parenthesis";
 					}else{
 						_currentType = "word";
 					}
@@ -842,6 +851,19 @@ dojo.declare(
         colorizeToken: function(/*token*/ currentToken){
             var previousToken = currentToken.previousSibling;
             var cDict = this.colorsDictionary;
+//			for(var i in cDict){
+//				if(previousToken && previousToken.firstChild.data.match(i)){
+//					previousToken.className = cDict[i].className;
+//	                var ppreviousToken = previousToken.previousSibling;
+//					if(ppreviousToken && ppreviousToken.firstChild.data.match(i)){
+//						ppreviousToken.className = cDict[i].className;
+//					}
+//				}
+//				if(currentToken.firstChild.data.match(i)){
+//					currentToken.className = cDict[i].className;
+//				}
+//			}
+
             if(previousToken){
                 previousToken.className = previousToken.firstChild.data in cDict ? cDict[previousToken.firstChild.data].className : "";
                 var ppreviousToken = previousToken.previousSibling;
@@ -987,7 +1009,6 @@ dojo.declare(
         	var _endCount = rowsToAdd.rows + _offset;
         	for(var i = _offset; i < _endCount; i++){
         		_rows += "<div>"+i+"</div>";
-        		console.debug("row added");
         	}
         	this.leftBand.innerHTML = _previousFragment + _rows;
         },
