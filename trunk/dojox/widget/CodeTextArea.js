@@ -624,16 +624,9 @@ dojo.declare(
 //              terminatorToken.appendChild(document.createTextNode(" "));
               return terminatorToken;
         },
-        writeToken: function(/*String*/ content, /*Boolean*/ moveCaret, /*Boolean*/ substCaret){
-            if(!content){ return; }
-
-            // tokenType
-            // find a way to add different token types!
-//            var tokenType = content.charAt(0) == "." || content.charAt(0) == " " ? "separator" : "word"; 
-            // parametrize this section [begin]
-            var tokenType = "word";
-            var wrapper = "span";
-            var _currentChar = content.charAt(0);
+        matchSymbol: function(/*Object literal*/ kwPar){
+            var tokenType = kwPar.def;
+            var _currentChar = kwPar.currentChar;
             var i = 0;
             while(i < this._symbols.length){
             	if(this._symbols[i][_currentChar]){
@@ -642,6 +635,21 @@ dojo.declare(
             	}
             	i++;
             }
+            return tokenType;
+        },
+        writeToken: function(/*String*/ content, /*Boolean*/ moveCaret, /*Boolean*/ substCaret){
+            if(!content){ return; }
+
+            // tokenType
+            // find a way to add different token types!
+//            var tokenType = content.charAt(0) == "." || content.charAt(0) == " " ? "separator" : "word"; 
+            // parametrize this section [begin]
+            var wrapper = "span";
+            var _currentChar = content.charAt(0);
+            var tokenType = this.matchSymbol({
+                currentChar : content.charAt(0),
+                def : "word"
+            });
             if(substCaret){
 				tokenType = substCaret;
 				wrapper = "i";
@@ -791,7 +799,6 @@ dojo.declare(
 				}
 				for(var k = 0; k < row.length; k++){
 					// token classification
-					_currentType = "word";
 					var _currentChar = row.charAt(k);
 					var _oldChar = _currentChar;
 					// html START
@@ -805,16 +812,12 @@ dojo.declare(
 						_currentChar = "&gt;";
 					}
 					// html END
-		            var j = 0;
-		            while(j < this._symbols.length){
-		            	if(this._symbols[j][_currentChar]){
-		            		_currentType = this._symbols[j][_currentChar];
-		            		break;
-		            	}
-		            	j++;
-		            }
+		            _currentType = this.matchSymbol({
+		                currentChar : _currentChar,
+		                def : "word"
+		            });
 					
-					if(_currentType == "separator"){
+					if(_currentChar == " "){
 						_currentChar = "&nbsp;";
 					}
 					
