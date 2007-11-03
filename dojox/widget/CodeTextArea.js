@@ -97,6 +97,7 @@ dojo.declare(
             document.body.focus();
             dojo.connect(this.domNode, "onmouseup", this, "setCaretPositionAtPointer");
             dojo.connect(this.domNode, "onclick", this, "blur");
+            // this._caret: a little trick for Opera...
             this._caret = document.createElement("input");
             this._caret.type = "text";
             this._caret.name = "_caret";
@@ -157,13 +158,15 @@ dojo.declare(
             var getArgs = {
                 url: url,
                 sync: true,
-                handleAs: "json-comment-optional"
+                handleAs: "json-comment-optional",
+                error: function(err){
+                	_self._dictionaryLoadError(err)
+                },
+                load: function(result){
+                	dojo.hitch(_self, callBack(result));
+            	}
             };
-            var getHandler = dojo.xhrGet(getArgs);
-            getHandler.addCallback(function(result){
-                dojo.hitch(_self, callBack(result));
-            });
-            getHandler.addErrback(function(err){ _self._dictionaryLoadError (err); });
+            dojo.xhrGet(getArgs);
         },
         _colorsFiller: function(data){
         	var cDict = {};
