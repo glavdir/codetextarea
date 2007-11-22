@@ -1,6 +1,7 @@
 dojo.provide("dojox.widget.CodeTextArea");
 
 dojo.require("dijit._editor.selection");
+dojo.require("dijit._editor.range");
 
 dojo.require("dijit._Widget");
 dojo.require("dojox.data.dom");
@@ -86,7 +87,6 @@ dojo.declare(
             this._initializeClipboard();
             this._initializeSuggestionsPopup();
             this._initializeRange();
-
 	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, this._addRowNumber));
 			dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, this._removeLineNumber));
 
@@ -135,7 +135,8 @@ dojo.declare(
         _initializeInternals: function(){
             this.commands = {
                 NONE: 0,
-                PASTE: 1
+                PASTE: 1,
+                SELECTALL: 5
             };
         },
         _initializeClipboard: function(){
@@ -202,6 +203,16 @@ dojo.declare(
                     this.massiveWrite(this._clipboard.value);
                     this.attachEvents();
                 break;
+                case cmd.SELECTALL:
+                var fChild = this.currentToken.firstChild;
+                if(fChild){
+                	var r = this._range;
+					r.setStartBefore(this.lines.firstChild);
+					r.setEndAfter(this.lines.lastChild);
+					this.selectRange(r);
+				}
+                	
+                break;
                 default:
                 break;
             }
@@ -220,11 +231,72 @@ dojo.declare(
                 break;
             }
         },
+        setSelectionStart: function(/*node*/node, /*integer*/position){
+        },
+        setSelectionEnd: function(/*node*/node, /*integer*/position){
+        },
+        selectRange: function(/*range*/ r){
+			// from dijit._editor.selection
+			var _document = dojo.doc;
+			if(_document.selection && dojo.body().createTextRange){ // IE
+				try{
+					//var range = dojo.body().createControlRange();
+					//range.addElement(element);
+					//if(!nochangefocus){
+						r._select(); //mmmpf, private method
+					//}
+				}catch(e){
+					//this.selectElementChildren(element,nochangefocus);
+				}
+			}else if(dojo.global["getSelection"]){
+				var selection = dojo.global.getSelection();
+				// FIXME: does this work on Safari?
+				if(selection["removeAllRanges"]){ // Mozilla
+					//var range = _document.createRange() ;
+					//range.selectNode(element);
+					selection.removeAllRanges() ;
+					selection.addRange(r) ;
+				}
+			}
+        	
+        },
         _initializeRange: function(){
-            this._range = document.createRange ? document.createRange() : null;
+//            this._range = document.createRange ? document.createRange() : null;
+//dojo.body().createControlRange() for IE?
+            //this._range = dojo.doc.createRange ? dojo.doc.createRange() : dijit.range.create();
+            this._range = dijit.range.create();
+            console.debug("range created");
+            var str = "";
+            var ta = document.createElement("textarea");
+            ta.style.height = "300px";
+            document.body.appendChild(ta);
+            for(var i in this._range){
+            	//console.debug(i);
+	            ta.value += i + "\n";
+            }
+        },
+        getSelectedText: function(){
+			return dijit._editor.selection.getSelectedText();
         },
         selectNode: function(node){
             // TODO
+        },
+        addToSelection: function(){
+			console.debug("shift + direction");
+			
+			//this._range.setStartBefore(this.currentToken.firstChild/*, this.caretIndex*/);
+			//this._range.setEndAfter(this.currentToken.firstChild/*, this.caretIndex + 1*/);
+
+			if(this.getSelectedText().length == 0){
+				this._range.setStart(this.currentToken.firstChild, this.caretIndex - 1);
+			}
+			this._range.setEnd(this.currentToken.firstChild, this.caretIndex);
+			//this._range.deleteContents();
+			//var selection = dojo.global.getSelection();
+			//selection.addRange(this._range);
+			this.selectRange(this._range);
+			//this._range.selectNodeContents(this.lines);
+			//console.debug(window.getSelection);
         },
         keyPressHandler: function(evt){
             if (this._preventLoops){
@@ -266,6 +338,9 @@ dojo.declare(
                 case dk.DOWN_ARROW:
                     if(charCode==0){
                         if(!lines[y + 1]){ return; }
+                        if(evt.shiftKey){
+                        	this.addToSelection();
+                        }
                         lineLength = this.getLineLength(y+1);
                         this.setCaretPosition(x < lineLength ? x : lineLength, y+1);
                     }else{
@@ -275,6 +350,9 @@ dojo.declare(
                 break;
                 case dk.LEFT_ARROW:
                     if(charCode==0){
+                        if(evt.shiftKey){
+                        	this.addToSelection();
+                        }
                         if(x){
                            this.setCaretPosition(x-1, y);
                         }else if(y){
@@ -285,10 +363,14 @@ dojo.declare(
                         this._specialKeyPressed = false;
                     }
                 break;
+                
                 case dk.RIGHT_ARROW:
                     if(charCode==0){
                         if(x<this.getLineLength(y)){
-                           this.setCaretPosition(x+1, y);
+                            this.setCaretPosition(x+1, y);
+                            if(evt.shiftKey){
+                            	this.addToSelection();
+                            }
                         }else if(y<this.numLines()-1){
                             this.setCaretPosition(0, y+1);
                         }
@@ -300,6 +382,9 @@ dojo.declare(
                 case dk.UP_ARROW:
                     if(charCode==0){
                         if(y<1){ return; }
+                        if(evt.shiftKey){
+                        	this.addToSelection();
+                        }
                         lineLength = this.getLineLength(y-1);
                         this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
                     }else{
@@ -341,6 +426,13 @@ dojo.declare(
                     break;
                 case dk.RIGHT_WINDOW:
                     break;
+                case 97: // a
+                    if(!evt.ctrlKey){
+                        this._specialKeyPressed = false;
+                    }else{
+	                    this.execCommand(this.commands.SELECTALL);
+                	}
+                break;
                 case 99: // c
                     if(!evt.ctrlKey){
                         this._specialKeyPressed = false;
@@ -748,7 +840,10 @@ dojo.declare(
             this.writeToken("-", false, "paste-delimiter"); // params: token, moveCaret, substCaret
 //            this.writeToken("-", false, "paste-delimiter"); // params: token, moveCaret, substCaret
         },
-        _getTextDelimiter: function(text){
+        setBookmark: function(){
+        	
+        },
+        _getTextDelimiter: function(/*String*/ text){
 			var _index;
 //			console.debug("i: " + dojo.query(".dojoCodeTextAreaLines i"));
             _index = text.indexOf("</i>");
