@@ -204,14 +204,12 @@ dojo.declare(
                     this.attachEvents();
                 break;
                 case cmd.SELECTALL:
-                var fChild = this.currentToken.firstChild;
-                if(fChild){
-                	var r = this._range;
-					r.setStartBefore(this.lines.firstChild);
-					r.setEndAfter(this.lines.lastChild);
-					this.selectRange(r);
-				}
-                	
+	                if(this.lines.firstChild){
+	                	var r = this._range;
+						r.setStartBefore(this.lines.firstChild);
+						r.setEndAfter(this.lines.lastChild);
+						this.selectRange(r);
+					}
                 break;
                 default:
                 break;
@@ -430,7 +428,7 @@ dojo.declare(
                     if(!evt.ctrlKey){
                         this._specialKeyPressed = false;
                     }else{
-	                    this.execCommand(this.commands.SELECTALL);
+	                    this.execCommand(cmd.SELECTALL);
                 	}
                 break;
                 case 99: // c
