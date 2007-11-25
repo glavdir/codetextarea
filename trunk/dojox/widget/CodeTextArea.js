@@ -47,8 +47,9 @@ dojo.declare(
 
         currentLine: null,
         currentToken: null,
-        previousToken: null,
+        lastToken: null,
         caretIndex: 0,
+        lastCaretIndex: 0,
         colorsUrl: "",
         autocompleteUrl: "",
         _caret: null,
@@ -136,7 +137,8 @@ dojo.declare(
             this.commands = {
                 NONE: 0,
                 PASTE: 1,
-                SELECTALL: 5
+                SELECTALL: 5,
+                CLEARSELECTION: 5
             };
         },
         _initializeClipboard: function(){
@@ -211,6 +213,7 @@ dojo.declare(
 						this.selectRange(r);
 					}
                 break;
+                case cmd.CLEARSELECTION:
                 default:
                 break;
             }
@@ -237,22 +240,14 @@ dojo.declare(
 			// from dijit._editor.selection
 			var _document = dojo.doc;
 			if(_document.selection && dojo.body().createTextRange){ // IE
-				try{
-					//var range = dojo.body().createControlRange();
-					//range.addElement(element);
-					//if(!nochangefocus){
-						r._select(); //mmmpf, private method
-					//}
-				}catch(e){
-					//this.selectElementChildren(element,nochangefocus);
-				}
+				r._select(); //mmmpf, private method
 			}else if(dojo.global["getSelection"]){
 				var selection = dojo.global.getSelection();
 				// FIXME: does this work on Safari?
 				if(selection["removeAllRanges"]){ // Mozilla
 					//var range = _document.createRange() ;
 					//range.selectNode(element);
-					selection.removeAllRanges() ;
+					selection.removeAllRanges();
 					selection.addRange(r) ;
 				}
 			}
@@ -279,22 +274,38 @@ dojo.declare(
         selectNode: function(node){
             // TODO
         },
-        addToSelection: function(){
-			console.debug("shift + direction");
-			
-			//this._range.setStartBefore(this.currentToken.firstChild/*, this.caretIndex*/);
-			//this._range.setEndAfter(this.currentToken.firstChild/*, this.caretIndex + 1*/);
-
-			if(this.getSelectedText().length == 0){
-				this._range.setStart(this.currentToken.firstChild, this.caretIndex - 1);
+        clearSelection: function(){
+			var _document = dojo.doc;
+			var r = this._range;
+			if(_document.selection && dojo.body().createTextRange){ // IE
+				//window.alert(r.deleteContents);
+				//dojo.doc.selection.clear(); // remove from document!
+				//r.deleteContents();
+				//r.collapsed = true;
+				this._range.setStart(this.currentToken.firstChild, 0);
+				this._range.setEnd(this.currentToken.firstChild, 0);
+				this.selectRange(this._range);
+				//r._select(); //mmmpf, private method
+			}else if(dojo.global["getSelection"]){
+				var selection = dojo.global.getSelection();
+				if(selection["removeAllRanges"]){ // Mozilla
+					selection.removeAllRanges();
+				}
 			}
-			this._range.setEnd(this.currentToken.firstChild, this.caretIndex);
-			//this._range.deleteContents();
-			//var selection = dojo.global.getSelection();
-			//selection.addRange(this._range);
+        },
+        addToSelection: function(/*Object literal*/ kwPar){	
+        	if(!(kwPar && kwPar.rightToLeft)){
+				if(this.getSelectedText().length == 0){
+					this._range.setStart(this.lastToken.firstChild, this.lastCaretIndex);
+				}
+				this._range.setEnd(this.currentToken.firstChild, this.caretIndex);
+			}else{
+				if(this.getSelectedText().length == 0){
+					this._range.setEnd(this.lastToken.firstChild, this.lastCaretIndex);
+				}
+				this._range.setStart(this.currentToken.firstChild, this.caretIndex);
+			}
 			this.selectRange(this._range);
-			//this._range.selectNodeContents(this.lines);
-			//console.debug(window.getSelection);
         },
         keyPressHandler: function(evt){
             if (this._preventLoops){
@@ -336,11 +347,14 @@ dojo.declare(
                 case dk.DOWN_ARROW:
                     if(charCode==0){
                         if(!lines[y + 1]){ return; }
-                        if(evt.shiftKey){
-                        	this.addToSelection();
-                        }
                         lineLength = this.getLineLength(y+1);
                         this.setCaretPosition(x < lineLength ? x : lineLength, y+1);
+
+                        if(evt.shiftKey){
+                        	this.addToSelection();
+                        }else{
+                        	this.clearSelection();
+                        }
                     }else{
                         // open round bracket (
                         this._specialKeyPressed = false;
@@ -348,11 +362,13 @@ dojo.declare(
                 break;
                 case dk.LEFT_ARROW:
                     if(charCode==0){
-                        if(evt.shiftKey){
-                        	this.addToSelection();
-                        }
                         if(x){
                            this.setCaretPosition(x-1, y);
+	                        if(evt.shiftKey){
+	                        	this.addToSelection({rightToLeft:true});
+	                        }else{
+	                        	this.clearSelection();
+	                        }
                         }else if(y){
                            this.setCaretPosition(this.getLineLength(y-1), y-1);
                         }
@@ -368,7 +384,9 @@ dojo.declare(
                             this.setCaretPosition(x+1, y);
                             if(evt.shiftKey){
                             	this.addToSelection();
-                            }
+	                        }else{
+	                        	this.clearSelection();
+	                        }
                         }else if(y<this.numLines()-1){
                             this.setCaretPosition(0, y+1);
                         }
@@ -380,11 +398,14 @@ dojo.declare(
                 case dk.UP_ARROW:
                     if(charCode==0){
                         if(y<1){ return; }
-                        if(evt.shiftKey){
-                        	this.addToSelection();
-                        }
                         lineLength = this.getLineLength(y-1);
                         this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
+
+                        if(evt.shiftKey){
+                        	this.addToSelection({rightToLeft:true});
+                        }else{
+                        	this.clearSelection();
+                        }
                     }else{
                         // ampersand &
                         this._specialKeyPressed = false;
@@ -623,8 +644,10 @@ dojo.declare(
                 firstChar = lastChar;
                 lastChar += tokens[i].firstChild.data.length;// + 1; 
                 if(x < lastChar){
+   					this.lastToken = this.currentToken;
                     this.currentToken = tokens[i];
                     this.previousToken = i ? tokens[i-1] : null;
+                    this.lastCaretIndex = this.caretIndex;
                     this.caretIndex = x - firstChar;
                     break;
                 }
@@ -664,6 +687,7 @@ dojo.declare(
             newLine.style.height = this._caretHeight + "px";
             var _currentToken = this.createLineTerminator();
             newLine.appendChild(_currentToken);
+ 			this.lastToken = this.currentToken;
             this.currentToken = _currentToken;
             return newLine;
         },
@@ -711,8 +735,8 @@ dojo.declare(
               terminatorToken.setAttribute("tokenType", "line-terminator");
               terminatorToken.style.visibility="hidden";
 //              terminatorToken.appendChild(document.createTextNode("\u00b6"));
-//              terminatorToken.appendChild(document.createTextNode("\u000D")); <-- better solution, but IE...
-              terminatorToken.appendChild(document.createTextNode("#"));
+              terminatorToken.appendChild(document.createTextNode("\u000D")); //<-- better solution, but IE...
+              //terminatorToken.appendChild(document.createTextNode("#"));
 
 //              terminatorToken.appendChild(document.createTextNode(" "));
               return terminatorToken;
@@ -762,7 +786,7 @@ dojo.declare(
                     // in the currentToken
                     currentToken.replaceChild(
                         document.createTextNode(
-                            currentToken.firstChild.data.substring(0,this.caretIndex)
+                            currentToken.firstChild.data.substring(0, this.caretIndex)
                             + content + currentToken.firstChild.data.substring(this.caretIndex)
                         ), 
                         currentToken.firstChild
@@ -795,6 +819,7 @@ dojo.declare(
                             currentToken.firstChild);
                         currentToken.setAttribute("tokenType", currentTokenType);
     
+    					this.lastToken = this.currentToken;
                         this.currentToken = currentToken = innerToken;
 //                        if(moveCaret){ this.moveCaretBy(content.length, 0); }
                     }
@@ -830,6 +855,7 @@ dojo.declare(
                         }
                     }
                 }
+ 				this.lastToken = this.currentToken;
                 this.currentToken = _targetToken;
 //                if(moveCaret){ this.moveCaretBy(content.length, 0); }
             }
@@ -943,6 +969,7 @@ dojo.declare(
 				} // end current row
 				if(i<rows.length-1){
 					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">#</span></div>";
+					//_rowText += "<span class=\"\" style=\"visibility:visible;border:1px solid red\" tokenType=\"line-terminator\">\n</span></div>";
 				}
 //				terminatorToken.appendChild(document.createTextNode("\u000D"));
 				
@@ -965,7 +992,9 @@ dojo.declare(
             }
             //console.debug("_xIncrement: " + _xIncrement);
 			this.currentToken = _savedCurrentToken;
-			this.setCaretPosition(this.x + _xIncrement, this.y + _yIncrement);
+			// error: in the following line this.x is wrong!
+			var _xBase = _yIncrement ? 0 : this.x;
+			this.setCaretPosition(_xBase + _xIncrement, this.y + _yIncrement);
 			this.setCurrentTokenAtCaret();
         },
         // handles the single token colorization
