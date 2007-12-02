@@ -4,6 +4,8 @@ dojo.require("dijit._editor.selection");
 dojo.require("dijit._editor.range");
 
 dojo.require("dijit._Widget");
+
+// replace dojox.data.dom.textContent
 dojo.require("dojox.data.dom");
 dojo.require("dijit._Templated");
 dojo.require("dijit.form.ComboBox");
@@ -15,7 +17,7 @@ dojo.declare(
         templateString: 
         '<div class="dojoCodeTextArea" dojoAttachPoint="codeTextAreaContainer" style="height:${height}px; width:${width}px">'
             +'<table class="dojoCodeWrapper">' +
-            		'<tbody><tr><td><div class="dojoCodeTextAreaBand" dojoAttachPoint="leftBand"><div>1</div></div></td><td>'
+            		'<tbody><tr><td><div class="dojoCodeTextAreaBand" dojoAttachPoint="leftBand"><ol><li></li></ol></div></td><td>'
             +'<div class="dojoCodeTextAreaHL" style="position:absolute;top:0;z-index:10" dojoAttachPoint="currentLineHighLight">'
                 +'<div dojoAttachPoint="caret" style="position:absolute;top:0;left:0" class="dojoCodeTextAreaCaret">&nbsp;'
                 +'</div>&nbsp;'
@@ -189,11 +191,11 @@ dojo.declare(
             window.alert(error);
         },
         getLineLength: function(/*int*/ y){
-            var line = this.lines.getElementsByTagName("div")[y];
+            var line = this.lines.getElementsByTagName("pre")[y];
             return line ? dojox.data.dom.textContent(line).length-1 : 0;
         },
         numLines: function(){
-            return this.lines.getElementsByTagName("div").length;
+            return this.lines.getElementsByTagName("pre").length;
         },
         execCommand: function(command){
             var cmd = this.commands;
@@ -268,6 +270,9 @@ dojo.declare(
 	            ta.value += i + "\n";
             }
         },
+        getSelection: function(){
+        	return dijit._editor.selection;
+        },
         getSelectedText: function(){
 			return dijit._editor.selection.getSelectedText();
         },
@@ -321,7 +326,7 @@ dojo.declare(
             var dk = dojo.keys;
             var x = this.x;
             var y = this.y;
-            var lines = this.lines.getElementsByTagName("div");
+            var lines = this.lines.getElementsByTagName("pre");
             var resCode = charCode||keyCode;
             var cmd = this.commands;
             switch(resCode){
@@ -330,18 +335,35 @@ dojo.declare(
                 case dk.BACKSPACE:
                     // refactor! shared code with caret left...
                     if(!(x || y)){ return; }
-                    if(x){
-                       this.setCaretPosition(x-1, y);
-                    }else if(y){
-                       this.setCaretPosition(this.getLineLength(y-1), y-1);
-                    }
-                    this.removeCharAtCaret();
+         			//this.clearSelection();
+         			var selection = this.getSelection();
+         			var len = selection.getSelectedText().length;
+         			if(len == 0){
+	                    if(x){
+	                       this.setCaretPosition(x-1, y);
+	                    }else if(y){
+	                       this.setCaretPosition(this.getLineLength(y-1), y-1);
+	                    }
+	                    this.removeCharAtCaret();
+         			}else{
+//         				for(var v in selection){
+//         					console.debug(v);
+//         				}
+         				window.alert(selection.getSelectedText().length + " " + this._range.startOffset);
+         				//this.moveCaretBy(-len, 0);
+	         			selection.remove();
+         			}
                 break;
                 case dk.DELETE:
                     if(charCode == dk.DELETE){ 
                         this._specialKeyPressed = false;
                         break; 
                     }
+         			if(selection.length == 0){
+	                    this.removeCharAtCaret();
+         			}else{
+	         			selection.remove();
+         			}
                     this.removeCharAtCaret();
                 break;
                 case dk.DOWN_ARROW:
@@ -560,7 +582,7 @@ dojo.declare(
             }
         },
         getLine: function(/*int*/ y){
-            return this.lines.getElementsByTagName("div")[y];
+            return this.lines.getElementsByTagName("pre")[y];
         },
         splitLineAtCaret: function(line){
             var _previousToken = this.currentToken.previousSibling;
@@ -635,7 +657,7 @@ dojo.declare(
         setCurrentTokenAtCaret: function(){
             // find the currentToken
             var x = this.x;
-            this.currentLine = this.lines.getElementsByTagName("div")[this.y];
+            this.currentLine = this.lines.getElementsByTagName("pre")[this.y];
             var tokens = this.currentLine.getElementsByTagName("span");
             var lastChar = 0;
             var firstChar = 0;
@@ -682,7 +704,7 @@ dojo.declare(
             this.setCaretPosition(x, y);
         },
         createLine: function(){
-            var newLine = document.createElement("div");
+            var newLine = document.createElement("pre");
             newLine.className = "codeTextAreaLine";             
             newLine.style.height = this._caretHeight + "px";
             var _currentToken = this.createLineTerminator();
@@ -704,7 +726,7 @@ dojo.declare(
             }
         },
         addNewLine: function(/*string*/ position){
-            var lines = this.lines.getElementsByTagName("div");
+            var lines = this.lines.getElementsByTagName("pre");
             var newLine = this.createLine();
             if(position=="end"){
                 this.lines.appendChild(newLine);
@@ -736,6 +758,7 @@ dojo.declare(
               terminatorToken.style.visibility="hidden";
 //              terminatorToken.appendChild(document.createTextNode("\u00b6"));
               terminatorToken.appendChild(document.createTextNode("\u000D")); //<-- better solution, but IE...
+              //terminatorToken.appendChild(document.createElement("br")); //<-- needs this!
               //terminatorToken.appendChild(document.createTextNode("#"));
 
 //              terminatorToken.appendChild(document.createTextNode(" "));
@@ -898,8 +921,8 @@ dojo.declare(
             var _lastFragment = _initialContent.substring(_index);
 
             var _parsedContent = "";
-//            var rows = content.split(/\n\r|\r\n|\r|\n/);
-            var rows = content.split(/\n/);
+            var rows = content.split(/\n\r|\r\n|\r|\n/);
+//            var rows = content.split(/\n/);
 			
 			_yIncrement = rows.length - 1;
 			
@@ -917,7 +940,7 @@ dojo.declare(
 				var _rowText = "";
 
 				if(i){
-					_rowText = "<div class=\"codeTextAreaLine\" style=\"height: " + this._caretHeight + "px\">";
+					_rowText = "<pre class=\"codeTextAreaLine\" style=\"height: " + this._caretHeight + "px\">";
 				}
 				for(var k = 0; k < row.length; k++){
 					// token classification
@@ -968,7 +991,7 @@ dojo.declare(
 					}
 				} // end current row
 				if(i<rows.length-1){
-					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">#</span></div>";
+					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">\u000D</span></pre>";
 					//_rowText += "<span class=\"\" style=\"visibility:visible;border:1px solid red\" tokenType=\"line-terminator\">\n</span></div>";
 				}
 //				terminatorToken.appendChild(document.createTextNode("\u000D"));
@@ -977,7 +1000,15 @@ dojo.declare(
 				// END new solution 09-23-2007
 
             } // end rows cycle
-            this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
+            if(!dojo.isIE){
+            	this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
+            }else{
+            	this.lines.innerHTML = "";
+            	var container = document.createElement("div");
+            	this.lines.appendChild(container);
+            	container.outerHTML = _firstFragment + _parsedContent + _lastFragment;
+            }
+
 			this._addRowNumber({rows:_yIncrement});
 //            var _delimiters = dojo.query(".dojoCodeTextAreaLines span[tokenType='start']");
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
@@ -1141,18 +1172,19 @@ dojo.declare(
             this.currentLine = newLine;
         },
         _addRowNumber: function(/*integer*/ rowsToAdd){
-        	var _previousFragment = this.leftBand.innerHTML;
-        	var _offset = this.leftBand.getElementsByTagName("div").length + 1;
+        	var _previousFragment = this.leftBand.getElementsByTagName("ol")[0].innerHTML;
+        	var _offset = this.leftBand.getElementsByTagName("ol")[0].getElementsByTagName("li").length + 1;
         	var _rows = "";
         	var _endCount = rowsToAdd.rows + _offset;
         	for(var i = _offset; i < _endCount; i++){
-        		_rows += "<div>"+i+"</div>";
+        		//_rows += "<div>"+i+"</div>";
+        		_rows += "<li></li>";
         	}
-        	this.leftBand.innerHTML = _previousFragment + _rows;
+        	this.leftBand.getElementsByTagName("ol")[0].innerHTML = _previousFragment + _rows;
         },
         _removeLineNumber: function(/*integer*/ rowsToRemove){
         	var _endCount = rowsToRemove.rows;
-        	var lB = this.leftBand;
+        	var lB = this.leftBand.getElementsByTagName("ol")[0];
         	for(var i = 0; i < _endCount; i++){
         		lB.removeChild(lB.lastChild);
         	}
