@@ -46,6 +46,7 @@ dojo.declare(
         _clipboard: null,
         _range: null,
         codeTextAreaContainer: null,
+        linesCollection: null,
 
         currentLine: null,
         currentToken: null,
@@ -83,6 +84,7 @@ dojo.declare(
         postCreate: function(){
             this.loadDictionary(this.autocompleteUrl, dojo.hitch(this, this._autocompleteFiller));
             this.loadDictionary(this.colorsUrl, dojo.hitch(this, this._colorsFiller));
+            this.linesCollection = this.lines.getElementsByTagName("pre");
             this.loadPlugins();
             this.setDimensions();
             this._initializeInternals();
@@ -191,11 +193,11 @@ dojo.declare(
             window.alert(error);
         },
         getLineLength: function(/*int*/ y){
-            var line = this.lines.getElementsByTagName("pre")[y];
+            var line = this.linesCollection[y];
             return line ? dojox.data.dom.textContent(line).length-1 : 0;
         },
         numLines: function(){
-            return this.lines.getElementsByTagName("pre").length;
+            return this.linesCollection.length;
         },
         execCommand: function(command){
             var cmd = this.commands;
@@ -276,6 +278,9 @@ dojo.declare(
         getSelectedText: function(){
 			return dijit._editor.selection.getSelectedText();
         },
+        getSelectedHtml: function(){
+			return dijit._editor.selection.getSelectedHtml();
+        },
         selectNode: function(node){
             // TODO
         },
@@ -300,17 +305,34 @@ dojo.declare(
         },
         addToSelection: function(/*Object literal*/ kwPar){	
         	if(!(kwPar && kwPar.rightToLeft)){
-				if(this.getSelectedText().length == 0){
+				if(this.getSelectedText().length == 0 /*&& !!!this.getSelectedHtml()*/){
 					this._range.setStart(this.lastToken.firstChild, this.lastCaretIndex);
 				}
 				this._range.setEnd(this.currentToken.firstChild, this.caretIndex);
 			}else{
-				if(this.getSelectedText().length == 0){
+				if(this.getSelectedText().length == 0 /*&& !!!this.getSelectedHtml()*/){
 					this._range.setEnd(this.lastToken.firstChild, this.lastCaretIndex);
 				}
 				this._range.setStart(this.currentToken.firstChild, this.caretIndex);
 			}
 			this.selectRange(this._range);
+        },
+        indexOf: function(node){
+        	var parent = node.parentNode;
+        	var children = parent.childNodes;
+        	var len = children.length;
+        	for(var i = 0; i < len; i++){
+        		if(children[i] === node){
+        			return i;
+        		}
+        	}
+        	return -1;
+        },
+        moveCaretAtToken: function(/*token*/ token, /*integer*/ offset){
+        	var line = token.parentNode;
+        	var y = this.indexOf(line);
+        	var targetOffset = offset||0;
+        	this.setCaretPosition(this.getTokenX(token) + targetOffset, y);
         },
         keyPressHandler: function(evt){
             if (this._preventLoops){
@@ -326,7 +348,7 @@ dojo.declare(
             var dk = dojo.keys;
             var x = this.x;
             var y = this.y;
-            var lines = this.lines.getElementsByTagName("pre");
+            var lines = this.linesCollection;
             var resCode = charCode||keyCode;
             var cmd = this.commands;
             switch(resCode){
@@ -334,24 +356,75 @@ dojo.declare(
                 break;
                 case dk.BACKSPACE:
                     // refactor! shared code with caret left...
-                    if(!(x || y)){ return; }
          			//this.clearSelection();
          			var selection = this.getSelection();
          			var len = selection.getSelectedText().length;
          			if(len == 0){
+         				if(!(x||y)){ return; }
 	                    if(x){
 	                       this.setCaretPosition(x-1, y);
 	                    }else if(y){
 	                       this.setCaretPosition(this.getLineLength(y-1), y-1);
 	                    }
 	                    this.removeCharAtCaret();
+	                    //window.alert("selection length = 0");
          			}else{
-//         				for(var v in selection){
-//         					console.debug(v);
-//         				}
-         				window.alert(selection.getSelectedText().length + " " + this._range.startOffset);
-         				//this.moveCaretBy(-len, 0);
+						// 
+						var startToken = this._range.startContainer.parentNode;
+						var endToken = this._range.endContainer.parentNode;
+						var startOffset = this._range.startOffset;
+						var endOffset = this._range.endOffset;
+						var startLine = startToken.parentNode;
+						var endLine = endToken.parentNode;
+						var currentToken = startToken;
+
+
+						this.moveCaretAtToken(startToken, startOffset);
 	         			selection.remove();
+						// startLine begin
+						var nextToken;
+						do{
+							nextToken = currentToken.nextSibling;
+							if(!currentToken.firstChild || !currentToken.firstChild.data){
+								console.debug("removing, block 1");
+								this.removeFromDOM(currentToken);
+							}
+							currentToken = nextToken;
+						}while(nextToken && nextToken !== endToken);
+//						was }while(nextToken && currentToken !== endToken);
+
+						// startLine end
+						// middle lines begin
+						console.debug("middle lines");
+						var currentLine = startLine.nextSibling;
+						var nextLine;
+						while(currentLine && currentLine !== endLine){
+							nextLine = currentLine.nextSibling;
+							this.removeFromDOM(currentLine);
+							currentLine = nextLine;
+						}						
+						// middle lines end
+						
+						// endLine begin
+						console.debug("end line");
+//						currentToken = endToken;
+//						var previousToken = endToken.previousSibling;
+//						do{
+//							nextToken = currentToken.previousSibling;
+//							if(!currentToken.firstChild){
+//								console.debug("previousToken.firstChild.data" + previousToken.firstChild.data);
+//								this.removeFromDOM(currentToken);
+//							}
+//							currentToken = previousToken;
+//						}while(previousToken && previousToken !== startToken);
+						// endLine end
+
+         				//this.moveCaretBy(-len, 0);
+         				this.setCurrentTokenAtCaret();
+         				if(this.currentToken && this.previousToken){
+			            	this.mergeSimilarTokens(this.previousToken, this.currentToken);
+			            }
+			            this.colorizeToken(this.currentToken);
          			}
                 break;
                 case dk.DELETE:
@@ -362,6 +435,7 @@ dojo.declare(
          			if(selection.length == 0){
 	                    this.removeCharAtCaret();
          			}else{
+         				
 	         			selection.remove();
          			}
                     this.removeCharAtCaret();
@@ -582,7 +656,7 @@ dojo.declare(
             }
         },
         getLine: function(/*int*/ y){
-            return this.lines.getElementsByTagName("pre")[y];
+            return this.linesCollection[y];
         },
         splitLineAtCaret: function(line){
             var _previousToken = this.currentToken.previousSibling;
@@ -647,17 +721,22 @@ dojo.declare(
             
             dojo.publish(this.id + "::CaretMove", [{x:x + 1,y:y + 1}]);
         },
-        setCaretPositionAtToken: function(/*token*/ targetToken){
-        	var _line = targetToken.parentNode;
-        	var _tokens = _line.getElementsByTagName("span");
-        	for(var i = 0; i < _tokens.length; i++){
-        		
+        getTokenX: function(/*token*/ token){
+        	var line = token.parentNode;
+        	var children = line.childNodes;
+        	var len = children.length;
+        	var x = 0;
+        	var i = 0;
+        	while(i < len && children[i] !== token){
+       			x+=children[i].firstChild.data.length;
+        		i++;
         	}
+        	return x;
         },
         setCurrentTokenAtCaret: function(){
             // find the currentToken
             var x = this.x;
-            this.currentLine = this.lines.getElementsByTagName("pre")[this.y];
+            this.currentLine = this.linesCollection[this.y];
             var tokens = this.currentLine.getElementsByTagName("span");
             var lastChar = 0;
             var firstChar = 0;
@@ -726,7 +805,7 @@ dojo.declare(
             }
         },
         addNewLine: function(/*string*/ position){
-            var lines = this.lines.getElementsByTagName("pre");
+            var lines = this.linesCollection;
             var newLine = this.createLine();
             if(position=="end"){
                 this.lines.appendChild(newLine);
@@ -790,6 +869,17 @@ dojo.declare(
                 currentChar : content.charAt(0),
                 def : "word"
             });
+			// nr 12-15-2007b
+			// substitution for " " with \u00a0, because Firefox can't select
+			// a string with spaces
+            if(tokenType == "separator"){
+            	var len = content.length;
+            	content = "";
+            	for(var i = 0; i < len; i++){
+            		content += "\u00a0";
+            	}
+            }
+			// nr 12-15-2007e
             if(substCaret){
 				tokenType = substCaret;
 				wrapper = "i";
@@ -818,8 +908,6 @@ dojo.declare(
                 }else{// subcase 2: different types
                     var firstText = currentToken.firstChild.data.substring(0, this.caretIndex);
                     var lastText = currentToken.firstChild.data.substring(this.caretIndex);
-                    console.debug("firstText: " + firstText + "currentTokenType: " + currentTokenType);
-                    console.debug("lastText: " + lastText);
                     if(firstText.length!=0){
                         // first token
                         var newToken = document.createElement("span"); // SPAN?? 27-10-2007
@@ -899,8 +987,9 @@ dojo.declare(
             }
             return _index + 4;
         },
-        removeToken: function(/*token*/ targetToken){
-            targetToken.parentNode.removeChild(targetToken);
+        removeFromDOM: function(/*DOM node*/ target){
+        	if(!target.parentNode){ return };
+            target.parentNode.removeChild(target);
         },
         massiveWrite: function(content){
             // find the caret position
@@ -1019,7 +1108,7 @@ dojo.declare(
             	if(_currentDelimiter.previousSibling && _currentDelimiter.nextSibling && _currentDelimiter.nextSibling.getAttribute("tokenType") != "line-terminator"){
             		this.mergeSimilarTokens(_currentDelimiter.nextSibling, _currentDelimiter.previousSibling, true);
             	}
-				this.removeToken(_delimiters[i]);
+				this.removeFromDOM(_delimiters[i]);
             }
             //console.debug("_xIncrement: " + _xIncrement);
 			this.currentToken = _savedCurrentToken;
