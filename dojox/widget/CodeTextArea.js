@@ -375,9 +375,12 @@ dojo.declare(
 						var startOffset = this._range.startOffset;
 						var endOffset = this._range.endOffset;
 						var startLine = startToken.parentNode;
+						console.debug("startLine: " + startLine);
 						var endLine = endToken.parentNode;
+						console.debug("endLine: " + endLine);
 						var currentToken = startToken;
-
+						var rowsToRemove = this.indexOf(endLine) - this.indexOf(startLine) - 1;
+// 						console.debug("startLine === endLine [" + (startLine.nextSibling === endLine) + "]");
 
 						this.moveCaretAtToken(startToken, startOffset);
 	         			selection.remove();
@@ -396,29 +399,44 @@ dojo.declare(
 						// startLine end
 						// middle lines begin
 						console.debug("middle lines");
-						var currentLine = startLine.nextSibling;
-						var nextLine;
-						while(currentLine && currentLine !== endLine){
-							nextLine = currentLine.nextSibling;
-							this.removeFromDOM(currentLine);
-							currentLine = nextLine;
-						}						
+//						var currentLine = startLine.nextSibling;
+//						console.debug("currentLine === endLine [" + (currentLine === endLine)+ "]");
+//						var nextLine;
+//						while(currentLine && (currentLine !== endLine)){
+//							console.debug("while loop");
+//							nextLine = currentLine.nextSibling;
+//							this.removeFromDOM(currentLine);
+//							this._removeLineNumber();
+//							console.debug("removing a line...");
+//							currentLine = nextLine;
+//						}						
 						// middle lines end
 						
 						// endLine begin
 						console.debug("end line");
-//						currentToken = endToken;
-//						var previousToken = endToken.previousSibling;
-//						do{
-//							nextToken = currentToken.previousSibling;
-//							if(!currentToken.firstChild){
-//								console.debug("previousToken.firstChild.data" + previousToken.firstChild.data);
-//								this.removeFromDOM(currentToken);
-//							}
-//							currentToken = previousToken;
-//						}while(previousToken && previousToken !== startToken);
+						currentToken = endToken;
+						var previousToken = endToken.previousSibling;
+						do{
+							previousToken = currentToken.previousSibling;
+							if(!currentToken.firstChild){
+								this.removeFromDOM(currentToken);
+							}
+							currentToken = previousToken;
+						}while(previousToken && previousToken !== startToken);
 						// endLine end
-
+						
+						/* remove the last line if childNodes.length == 1, (only line-terminator)*/
+						if((endLine !== startLine) && endLine.childNodes.length == 1){
+							this.removeFromDOM(endLine);
+							this._removeLineNumber({rows:1});
+						}
+						
+						
+						// remove line numbers
+						if(rowsToRemove > 0){
+							this._removeLineNumber({rows:rowsToRemove});
+						}
+						
          				//this.moveCaretBy(-len, 0);
          				this.setCurrentTokenAtCaret();
          				if(this.currentToken && this.previousToken){
@@ -442,7 +460,7 @@ dojo.declare(
                 break;
                 case dk.DOWN_ARROW:
                     if(charCode==0){
-                        if(!lines[y + 1]){ return; }
+                        if(!lines[y + 1]){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y+1);
                         this.setCaretPosition(x < lineLength ? x : lineLength, y+1);
 
@@ -459,9 +477,13 @@ dojo.declare(
                 case dk.LEFT_ARROW:
                     if(charCode==0){
                         if(x){
-                           this.setCaretPosition(x-1, y);
+							var kwPar = {rightToLeft:true};
+							if(!this.isCaretAtStartOfSelection(true)){
+								kwPar = {rightToLeft:false};
+							}
+                            this.setCaretPosition(x-1, y);
 	                        if(evt.shiftKey){
-	                        	this.addToSelection({rightToLeft:true});
+	                        	this.addToSelection(kwPar);
 	                        }else{
 	                        	this.clearSelection();
 	                        }
@@ -477,9 +499,14 @@ dojo.declare(
                 case dk.RIGHT_ARROW:
                     if(charCode==0){
                         if(x<this.getLineLength(y)){
+							var kwPar = {rightToLeft:false};
+							if(this.isCaretAtStartOfSelection()){
+								kwPar = {rightToLeft:true};
+							}
                             this.setCaretPosition(x+1, y);
+
                             if(evt.shiftKey){
-                            	this.addToSelection();
+                            	this.addToSelection(kwPar);
 	                        }else{
 	                        	this.clearSelection();
 	                        }
@@ -493,7 +520,7 @@ dojo.declare(
                 break;
                 case dk.UP_ARROW:
                     if(charCode==0){
-                        if(y<1){ return; }
+                        if(y<1){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y-1);
                         this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
 
@@ -594,6 +621,28 @@ dojo.declare(
             }
             dojo.stopEvent(evt); // prevent default action (opera) // to TEST!
 //            evt.preventDefault(); // prevent default action (opera)
+        },
+        getSelectionStartX: function(){
+        	var x = 0;
+			var startToken = this._range.startContainer.parentNode;
+			var x = this._range.startOffset;
+			var prev = startToken.previousSibling;
+			while(prev){
+				x += prev.firstChild.data.length;
+				prev = prev.previousSibling;
+			}
+        	return x;
+        },
+        getSelectionStartY: function(){
+        	var y = 0;
+			var startToken = this._range.startContainer.parentNode;
+			var startLine = startToken.parentNode;
+			var y = this.indexOf(startLine);
+        	return y;
+        },
+        isCaretAtStartOfSelection: function(/*boolean*/ def){
+			if(!(this.getSelectedText() && this.getSelectedText().length)){ return !!def; }
+			return ((this.x == this.getSelectionStartX()) && (this.y == this.getSelectionStartY()))
         },
         writeTab: function(){
             // GRRR, correct the writeToken method!
@@ -1272,6 +1321,7 @@ dojo.declare(
         	this.leftBand.getElementsByTagName("ol")[0].innerHTML = _previousFragment + _rows;
         },
         _removeLineNumber: function(/*integer*/ rowsToRemove){
+			console.debug("removing " + rowsToRemove.rows + " rows");
         	var _endCount = rowsToRemove.rows;
         	var lB = this.leftBand.getElementsByTagName("ol")[0];
         	for(var i = 0; i < _endCount; i++){
