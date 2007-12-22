@@ -303,17 +303,113 @@ dojo.declare(
 				}
 			}
         },
-        addToSelection: function(/*Object literal*/ kwPar){	
-        	if(!(kwPar && kwPar.rightToLeft)){
-				if(this.getSelectedText().length == 0 /*&& !!!this.getSelectedHtml()*/){
-					this._range.setStart(this.lastToken.firstChild, this.lastCaretIndex);
-				}
-				this._range.setEnd(this.currentToken.firstChild, this.caretIndex);
+        switchSelection: function(/*boolean*/ kwPar){
+			//return;
+        	var startToEnd = (kwPar && kwPar.startToEnd) ? kwPar.startToEnd : false;
+			if(!this.getSelectedText() || !this.getSelectedText().length){ return; }
+			var startToken = this._range.startContainer.parentNode;
+			var endToken = this._range.endContainer.parentNode;
+			var startOffset = this._range.startOffset;
+			var endOffset = this._range.endOffset;
+			console.debug("startToEnd: " + startToEnd);
+			this.clearSelection();
+			if(startToEnd){
+//	        	this._range.setEnd(startToken, startOffset);
+				this.lastToken = startToken;
+				this.lastCaretIndex = startOffset;
 			}else{
-				if(this.getSelectedText().length == 0 /*&& !!!this.getSelectedHtml()*/){
-					this._range.setEnd(this.lastToken.firstChild, this.lastCaretIndex);
+//	        	this._range.setStart(endToken, endOffset);
+				this.lastToken = endToken;
+				this.lastCaretIndex = endOffset;
+			}
+			//this.selectRange(this._range);
+        },
+        compareTokenPosition: function(/*token*/ fromToken, /*token*/ toToken){
+        	// returns:
+        	//  0: same token and position
+        	// -1: fromToken/index is before
+        	//  1: fromToken/index is after
+			var firstToken = fromToken.token;
+			var firstIndex = fromToken.index;
+			var secondToken = toToken.token;
+			var secondIndex = toToken.index;
+			var indexOf = this.indexOf;
+			var firstParent = firstToken.parentNode;
+			var secondParent = secondToken.parentNode;
+			if(firstToken === secondToken && firstIndex == secondIndex){
+				return 0;
+			}else if( (indexOf(firstParent) < indexOf(secondParent))
+				|| 
+					((indexOf(firstParent) == indexOf(secondParent))
+					&&
+					(indexOf(firstToken) < indexOf(secondToken))) 
+				||  
+					((indexOf(firstParent) == indexOf(secondParent))
+					&&
+					(indexOf(firstToken) == indexOf(secondToken))
+					&&
+					(firstIndex < secondIndex)) ){
+				return -1;
+			}else{
+				return 1;
+			}
+        },
+        addToSelection: function(/*Object literal*/ kwPar){
+			// kwPar: oldToken, oldIndex
+			var oldToken = kwPar.token;
+			var oldIndex = kwPar.index;
+			var newToken = this.currentToken;
+			var newIndex = this.caretIndex;
+			if(this.getSelectedText().length == 0){
+				this._range.detach();
+	            this._range = dijit.range.create();
+				this._range.setStart(oldToken.firstChild, oldIndex);
+				this._range.setEnd(oldToken.firstChild, oldIndex);
+			}
+
+			var selectionStartToken = this.getSelectionStartToken();
+			var selectionStartIndex = this.getSelectionStartIndex();
+			var selectionEndToken = this.getSelectionEndToken();
+			var selectionEndIndex = this.getSelectionEndIndex();
+
+			if(this.getSelectedText().length){
+				// inversion begin
+				if(!this.compareTokenPosition({token:oldToken, index:oldIndex},{token:selectionStartToken,index:selectionStartIndex}) 
+					&&
+					(this.compareTokenPosition({token:newToken, index:newIndex},{token:selectionEndToken,index:selectionEndIndex}) == 1)){
+					oldToken = this.getSelectionEndToken();
+					oldIndex = this.getSelectionEndIndex();
+					this._range.setStart(selectionEndToken.firstChild, selectionEndIndex);
 				}
-				this._range.setStart(this.currentToken.firstChild, this.caretIndex);
+				if(!this.compareTokenPosition({token:oldToken, index:oldIndex},{token:selectionEndToken,index:selectionEndIndex}) 
+					&&
+					(this.compareTokenPosition({token:newToken, index:newIndex},{token:selectionStartToken,index:selectionStartIndex}) == -1)){
+					oldToken = this.getSelectionEndToken();
+					oldIndex = this.getSelectionEndIndex();
+					this._range.setEnd(selectionStartToken.firstChild, selectionStartIndex);
+				}
+				// inversion end
+			}
+			// 4 cases
+			if((this.compareTokenPosition({token:oldToken, index:oldIndex},{token:newToken,index:newIndex}) == -1)){
+//				console.debug("--> ");
+				if (this.compareTokenPosition({token:newToken, index:newIndex},{token:selectionEndToken,index:selectionEndIndex}) == 1){
+				// 1) |__|-->I
+					this._range.setEnd(newToken.firstChild, newIndex);
+				}else{
+				// 2) |-->__|
+					this._range.setStart(newToken.firstChild, newIndex);
+				}
+			}else{ 
+//				console.debug("<--");
+				if (this.compareTokenPosition({token:newToken, index:newIndex},{token:selectionStartToken,index:selectionStartIndex}) == -1){
+				// 3) I<--|__|
+					this._range.setStart(newToken.firstChild, newIndex);
+				}else{
+				// 4) |__<--|
+					this._range.setEnd(newToken.firstChild, newIndex);
+				}
+			
 			}
 			this.selectRange(this._range);
         },
@@ -462,10 +558,44 @@ dojo.declare(
                     if(charCode==0){
                         if(!lines[y + 1]){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y+1);
+//						var kwPar = {rightToLeft:false};
+//                        if(evt.shiftKey && this.getSelectedText().length){
+//							var endToken = this._range.endContainer.parentNode;
+//							var endIndex = this.indexOf(endToken.parentNode);
+//							var beforeCondition = (this.y == this.getSelectionEndY() && this.x < this.getSelectionEndX()) 
+//								? true : false;
+//						}
+//						if(this.isCaretAtStartOfSelection()){
+//							kwPar = {rightToLeft:true};
+//						}
+//						if(this.isCaretAtStartOfSelection()){
+							//this.switchSelection({startToEnd:false});
+//						}
+						// nr 12-18-2007b
+//						this.lastToken = this.currentToken;
+//						this.lastCaretIndex = this.caretIndex;
+						// nr 12-18-2007e
+						
+						// nr 12-21-2007b
+						var kwPar = {
+							token: this.currentToken,
+							index: this.caretIndex
+						}
+						// nr 12-21-2007e
+						
                         this.setCaretPosition(x < lineLength ? x : lineLength, y+1);
 
                         if(evt.shiftKey){
-                        	this.addToSelection();
+//                        	if(this.getSelectedText().length){
+//								var afterCondition = (this.y > this.getSelectionEndY()) 
+//									? true : false;
+//	                        	if(beforeCondition && afterCondition){
+//	                        		console.debug("inversion!");
+//									this.switchSelection({startToEnd:false});
+//	                        	}
+//                        	}
+                        	
+                        	this.addToSelection(kwPar);
                         }else{
                         	this.clearSelection();
                         }
@@ -477,10 +607,22 @@ dojo.declare(
                 case dk.LEFT_ARROW:
                     if(charCode==0){
                         if(x){
-							var kwPar = {rightToLeft:true};
-							if(!this.isCaretAtStartOfSelection(true)){
-								kwPar = {rightToLeft:false};
+//							var kwPar = {rightToLeft:true};
+//							if(!this.isCaretAtStartOfSelection(true)){
+//								kwPar = {rightToLeft:false};
+//							}
+							// nr 12-18-2007b
+//							this.lastToken = this.currentToken;
+//							this.lastCaretIndex = this.caretIndex;
+							// nr 12-18-2007e
+							
+							// nr 12-21-2007b
+							var kwPar = {
+								token: this.currentToken,
+								index: this.caretIndex
 							}
+							// nr 12-21-2007e
+							
                             this.setCaretPosition(x-1, y);
 	                        if(evt.shiftKey){
 	                        	this.addToSelection(kwPar);
@@ -499,10 +641,22 @@ dojo.declare(
                 case dk.RIGHT_ARROW:
                     if(charCode==0){
                         if(x<this.getLineLength(y)){
-							var kwPar = {rightToLeft:false};
-							if(this.isCaretAtStartOfSelection()){
-								kwPar = {rightToLeft:true};
+//							var kwPar = {rightToLeft:false};
+//							if(this.isCaretAtStartOfSelection()){
+//								kwPar = {rightToLeft:true};
+//							}
+							// nr 12-18-2007b
+//							this.lastToken = this.currentToken;
+//							this.lastCaretIndex = this.caretIndex;
+							// nr 12-18-2007e
+
+							// nr 12-21-2007b
+							var kwPar = {
+								token: this.currentToken,
+								index: this.caretIndex
 							}
+							// nr 12-21-2007e
+
                             this.setCaretPosition(x+1, y);
 
                             if(evt.shiftKey){
@@ -521,11 +675,44 @@ dojo.declare(
                 case dk.UP_ARROW:
                     if(charCode==0){
                         if(y<1){ dojo.stopEvent(evt); return; }
+//						var kwPar = {rightToLeft:true};
+//                        if(evt.shiftKey && this.getSelectedText().length){
+//							startToken = this._range.startContainer.parentNode;
+//							startIndex = this.indexOf(startToken.parentNode);
+//							var beforeCondition = (this.y == this.getSelectionStartY() && this.x > this.getSelectionStartX()) 
+//								? true : false;
+//						}						
+//						if(!this.isCaretAtStartOfSelection(true)){
+//							this.switchSelection({startToEnd:true});
+//							kwPar = {rightToLeft:false};
+//						}
                         lineLength = this.getLineLength(y-1);
-                        this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
+						// nr 12-18-2007b
+//						this.lastToken = this.currentToken;
+//						this.lastCaretIndex = this.caretIndex;
+						// nr 12-18-2007e
 
+						// nr 12-21-2007b
+						var kwPar = {
+							token: this.currentToken,
+							index: this.caretIndex
+						}
+						// nr 12-21-2007e
+
+                        this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
+						//if(!this.isCaretAtStartOfSelection(true)){
+							//this.switchSelection({startToEnd:true});
+						//}
                         if(evt.shiftKey){
-                        	this.addToSelection({rightToLeft:true});
+//                        		if(this.getSelectedText().length){
+//									var afterCondition = (this.y < this.getSelectionStartY()) 
+//										? true : false;
+//		                        	if(beforeCondition && afterCondition){
+//		                        		console.debug("inversion UP!");
+//										this.switchSelection({startToEnd:true});
+//		                        	}
+//    							}
+                        	this.addToSelection(kwPar);
                         }else{
                         	this.clearSelection();
                         }
@@ -622,10 +809,22 @@ dojo.declare(
             dojo.stopEvent(evt); // prevent default action (opera) // to TEST!
 //            evt.preventDefault(); // prevent default action (opera)
         },
+        getSelectionStartToken: function(){
+        	return this._range.startContainer.parentNode;
+        },
+        getSelectionEndToken: function(){
+        	return this._range.endContainer.parentNode;
+        },
+        getSelectionStartIndex: function(){
+        	return this._range.startOffset;
+        },
+        getSelectionEndIndex: function(){
+        	return this._range.endOffset;
+        },
         getSelectionStartX: function(){
         	var x = 0;
-			var startToken = this._range.startContainer.parentNode;
-			var x = this._range.startOffset;
+			var startToken = this.getSelectionStartToken();
+			var x = this.getSelectionStartIndex();
 			var prev = startToken.previousSibling;
 			while(prev){
 				x += prev.firstChild.data.length;
@@ -635,9 +834,27 @@ dojo.declare(
         },
         getSelectionStartY: function(){
         	var y = 0;
-			var startToken = this._range.startContainer.parentNode;
+			var startToken = this.getSelectionStartToken();
 			var startLine = startToken.parentNode;
 			var y = this.indexOf(startLine);
+        	return y;
+        },
+        getSelectionEndX: function(){
+        	var x = 0;
+			var endToken = this.getSelectionEndToken();
+			var x = this.getSelectionEndIndex();
+			var prev = endToken.previousSibling;
+			while(prev){
+				x += prev.firstChild.data.length;
+				prev = prev.previousSibling;
+			}
+        	return x;
+        },
+        getSelectionEndY: function(){
+        	var y = 0;
+			var endToken = this.getSelectionEndToken();
+			var endLine = endToken.parentNode;
+			var y = this.indexOf(endLine);
         	return y;
         },
         isCaretAtStartOfSelection: function(/*boolean*/ def){
@@ -794,10 +1011,10 @@ dojo.declare(
                 firstChar = lastChar;
                 lastChar += tokens[i].firstChild.data.length;// + 1; 
                 if(x < lastChar){
-   					this.lastToken = this.currentToken;
+//   					this.lastToken = this.currentToken;
                     this.currentToken = tokens[i];
                     this.previousToken = i ? tokens[i-1] : null;
-                    this.lastCaretIndex = this.caretIndex;
+//                    this.lastCaretIndex = this.caretIndex;
                     this.caretIndex = x - firstChar;
                     break;
                 }
@@ -979,7 +1196,7 @@ dojo.declare(
                             currentToken.firstChild);
                         currentToken.setAttribute("tokenType", currentTokenType);
     
-    					this.lastToken = this.currentToken;
+//    					this.lastToken = this.currentToken;
                         this.currentToken = currentToken = innerToken;
 //                        if(moveCaret){ this.moveCaretBy(content.length, 0); }
                     }
@@ -1015,7 +1232,7 @@ dojo.declare(
                         }
                     }
                 }
- 				this.lastToken = this.currentToken;
+// 				this.lastToken = this.currentToken;
                 this.currentToken = _targetToken;
 //                if(moveCaret){ this.moveCaretBy(content.length, 0); }
             }
