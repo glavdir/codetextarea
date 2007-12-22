@@ -303,27 +303,6 @@ dojo.declare(
 				}
 			}
         },
-        switchSelection: function(/*boolean*/ kwPar){
-			//return;
-        	var startToEnd = (kwPar && kwPar.startToEnd) ? kwPar.startToEnd : false;
-			if(!this.getSelectedText() || !this.getSelectedText().length){ return; }
-			var startToken = this._range.startContainer.parentNode;
-			var endToken = this._range.endContainer.parentNode;
-			var startOffset = this._range.startOffset;
-			var endOffset = this._range.endOffset;
-			console.debug("startToEnd: " + startToEnd);
-			this.clearSelection();
-			if(startToEnd){
-//	        	this._range.setEnd(startToken, startOffset);
-				this.lastToken = startToken;
-				this.lastCaretIndex = startOffset;
-			}else{
-//	        	this._range.setStart(endToken, endOffset);
-				this.lastToken = endToken;
-				this.lastCaretIndex = endOffset;
-			}
-			//this.selectRange(this._range);
-        },
         compareTokenPosition: function(/*token*/ fromToken, /*token*/ toToken){
         	// returns:
         	//  0: same token and position
@@ -558,43 +537,14 @@ dojo.declare(
                     if(charCode==0){
                         if(!lines[y + 1]){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y+1);
-//						var kwPar = {rightToLeft:false};
-//                        if(evt.shiftKey && this.getSelectedText().length){
-//							var endToken = this._range.endContainer.parentNode;
-//							var endIndex = this.indexOf(endToken.parentNode);
-//							var beforeCondition = (this.y == this.getSelectionEndY() && this.x < this.getSelectionEndX()) 
-//								? true : false;
-//						}
-//						if(this.isCaretAtStartOfSelection()){
-//							kwPar = {rightToLeft:true};
-//						}
-//						if(this.isCaretAtStartOfSelection()){
-							//this.switchSelection({startToEnd:false});
-//						}
-						// nr 12-18-2007b
-//						this.lastToken = this.currentToken;
-//						this.lastCaretIndex = this.caretIndex;
-						// nr 12-18-2007e
-						
-						// nr 12-21-2007b
 						var kwPar = {
 							token: this.currentToken,
 							index: this.caretIndex
 						}
-						// nr 12-21-2007e
 						
                         this.setCaretPosition(x < lineLength ? x : lineLength, y+1);
 
                         if(evt.shiftKey){
-//                        	if(this.getSelectedText().length){
-//								var afterCondition = (this.y > this.getSelectionEndY()) 
-//									? true : false;
-//	                        	if(beforeCondition && afterCondition){
-//	                        		console.debug("inversion!");
-//									this.switchSelection({startToEnd:false});
-//	                        	}
-//                        	}
-                        	
                         	this.addToSelection(kwPar);
                         }else{
                         	this.clearSelection();
@@ -607,21 +557,10 @@ dojo.declare(
                 case dk.LEFT_ARROW:
                     if(charCode==0){
                         if(x){
-//							var kwPar = {rightToLeft:true};
-//							if(!this.isCaretAtStartOfSelection(true)){
-//								kwPar = {rightToLeft:false};
-//							}
-							// nr 12-18-2007b
-//							this.lastToken = this.currentToken;
-//							this.lastCaretIndex = this.caretIndex;
-							// nr 12-18-2007e
-							
-							// nr 12-21-2007b
 							var kwPar = {
 								token: this.currentToken,
 								index: this.caretIndex
 							}
-							// nr 12-21-2007e
 							
                             this.setCaretPosition(x-1, y);
 	                        if(evt.shiftKey){
@@ -641,21 +580,10 @@ dojo.declare(
                 case dk.RIGHT_ARROW:
                     if(charCode==0){
                         if(x<this.getLineLength(y)){
-//							var kwPar = {rightToLeft:false};
-//							if(this.isCaretAtStartOfSelection()){
-//								kwPar = {rightToLeft:true};
-//							}
-							// nr 12-18-2007b
-//							this.lastToken = this.currentToken;
-//							this.lastCaretIndex = this.caretIndex;
-							// nr 12-18-2007e
-
-							// nr 12-21-2007b
 							var kwPar = {
 								token: this.currentToken,
 								index: this.caretIndex
 							}
-							// nr 12-21-2007e
 
                             this.setCaretPosition(x+1, y);
 
@@ -675,43 +603,14 @@ dojo.declare(
                 case dk.UP_ARROW:
                     if(charCode==0){
                         if(y<1){ dojo.stopEvent(evt); return; }
-//						var kwPar = {rightToLeft:true};
-//                        if(evt.shiftKey && this.getSelectedText().length){
-//							startToken = this._range.startContainer.parentNode;
-//							startIndex = this.indexOf(startToken.parentNode);
-//							var beforeCondition = (this.y == this.getSelectionStartY() && this.x > this.getSelectionStartX()) 
-//								? true : false;
-//						}						
-//						if(!this.isCaretAtStartOfSelection(true)){
-//							this.switchSelection({startToEnd:true});
-//							kwPar = {rightToLeft:false};
-//						}
                         lineLength = this.getLineLength(y-1);
-						// nr 12-18-2007b
-//						this.lastToken = this.currentToken;
-//						this.lastCaretIndex = this.caretIndex;
-						// nr 12-18-2007e
-
-						// nr 12-21-2007b
 						var kwPar = {
 							token: this.currentToken,
 							index: this.caretIndex
 						}
-						// nr 12-21-2007e
 
                         this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
-						//if(!this.isCaretAtStartOfSelection(true)){
-							//this.switchSelection({startToEnd:true});
-						//}
                         if(evt.shiftKey){
-//                        		if(this.getSelectedText().length){
-//									var afterCondition = (this.y < this.getSelectionStartY()) 
-//										? true : false;
-//		                        	if(beforeCondition && afterCondition){
-//		                        		console.debug("inversion UP!");
-//										this.switchSelection({startToEnd:true});
-//		                        	}
-//    							}
                         	this.addToSelection(kwPar);
                         }else{
                         	this.clearSelection();
@@ -862,7 +761,6 @@ dojo.declare(
 			return ((this.x == this.getSelectionStartX()) && (this.y == this.getSelectionStartY()))
         },
         writeTab: function(){
-            // GRRR, correct the writeToken method!
             this.write("    ", true);
         },
         removeCharAtCaret: function(){
@@ -1011,10 +909,8 @@ dojo.declare(
                 firstChar = lastChar;
                 lastChar += tokens[i].firstChild.data.length;// + 1; 
                 if(x < lastChar){
-//   					this.lastToken = this.currentToken;
                     this.currentToken = tokens[i];
                     this.previousToken = i ? tokens[i-1] : null;
-//                    this.lastCaretIndex = this.caretIndex;
                     this.caretIndex = x - firstChar;
                     break;
                 }
@@ -1042,8 +938,6 @@ dojo.declare(
         },
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e);
-//            console.debug("evt.layerX: " + evt.layerX);
-//            console.debug("evt.layerY: " + evt.layerY);
             var y = Math.min(parseInt(Math.max(0, evt.layerY) / this._caretHeight), this.numLines()-1);
             var x = Math.min(parseInt(Math.max(0, evt.layerX) / this._caretWidth), this.getLineLength(y));
             this.setCaretPosition(x, y);
@@ -1082,7 +976,6 @@ dojo.declare(
             return newLine;
         },
         write: function(/*String*/ text, /*Boolean*/ moveCaret){
-//            var rows = text.split("\n");
             if(!text){ return; }
             var rows = text.split(/\n\r|\r\n|\r|\n/);
             for(var i = 0; i < rows.length; i++){
@@ -1101,12 +994,7 @@ dojo.declare(
               var terminatorToken = document.createElement("span");
               terminatorToken.setAttribute("tokenType", "line-terminator");
               terminatorToken.style.visibility="hidden";
-//              terminatorToken.appendChild(document.createTextNode("\u00b6"));
-              terminatorToken.appendChild(document.createTextNode("\u000D")); //<-- better solution, but IE...
-              //terminatorToken.appendChild(document.createElement("br")); //<-- needs this!
-              //terminatorToken.appendChild(document.createTextNode("#"));
-
-//              terminatorToken.appendChild(document.createTextNode(" "));
+              terminatorToken.appendChild(document.createTextNode("\u000D"));
               return terminatorToken;
         },
         matchSymbol: function(/*Object literal*/ kwPar){
@@ -1232,7 +1120,6 @@ dojo.declare(
                         }
                     }
                 }
-// 				this.lastToken = this.currentToken;
                 this.currentToken = _targetToken;
 //                if(moveCaret){ this.moveCaretBy(content.length, 0); }
             }
@@ -1246,7 +1133,6 @@ dojo.declare(
         },
         _getTextDelimiter: function(/*String*/ text){
 			var _index;
-//			console.debug("i: " + dojo.query(".dojoCodeTextAreaLines i"));
             _index = text.indexOf("</i>");
             if(_index == -1){
             	_index = text.indexOf("</I>"); // IE fix
@@ -1264,12 +1150,9 @@ dojo.declare(
             var _savedCurrentToken = this.currentToken;
             var _savedPreviousToken = this.previousToken;
             this.substCaretPosition();
-//            window.alert(this.lines.innerHTML);
             var _initialContent = this.lines.innerHTML;
 
             var _index = this._getTextDelimiter(_initialContent);
-
-            //var _initialContent = this.lines.innerHTML;
 
             var _firstFragment = _initialContent.substring(0, _index);
 			
@@ -1326,13 +1209,11 @@ dojo.declare(
 					if(_currentType === _previousType && k < row.length - 1){
 						_workingToken += _currentChar;
 						_unparsedToken += _oldChar;
-//						console.debug("1: " + _workingToken);
 					}else{ // type change or end of line
 						if(_currentType === _previousType){
 							_workingToken += _currentChar;
 							_unparsedToken += _oldChar;
 						}
-//						console.debug("2: " + _workingToken);
 						if(_previousType){
 							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _previousType + "\">" + _workingToken + "</span>";
@@ -1347,13 +1228,10 @@ dojo.declare(
 				} // end current row
 				if(i<rows.length-1){
 					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">\u000D</span></pre>";
-					//_rowText += "<span class=\"\" style=\"visibility:visible;border:1px solid red\" tokenType=\"line-terminator\">\n</span></div>";
 				}
-//				terminatorToken.appendChild(document.createTextNode("\u000D"));
 				
 				_parsedContent += _rowText;
 				// END new solution 09-23-2007
-
             } // end rows cycle
             if(!dojo.isIE){
             	this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
@@ -1365,10 +1243,7 @@ dojo.declare(
             }
 
 			this._addRowNumber({rows:_yIncrement});
-//            var _delimiters = dojo.query(".dojoCodeTextAreaLines span[tokenType='start']");
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
-//			delimiters[0] = dojo.query(".dojoCodeTextAreaLines span[tokenType='start']");
-//			delimiters[1] = dojo.query(".dojoCodeTextAreaLines span[tokenType='end']");
             for(var i = 0; i < _delimiters.length; i++){
             	var _currentDelimiter = _delimiters[i];
             	if(_currentDelimiter.previousSibling && _currentDelimiter.nextSibling && _currentDelimiter.nextSibling.getAttribute("tokenType") != "line-terminator"){
@@ -1376,7 +1251,6 @@ dojo.declare(
             	}
 				this.removeFromDOM(_delimiters[i]);
             }
-            //console.debug("_xIncrement: " + _xIncrement);
 			this.currentToken = _savedCurrentToken;
 			// error: in the following line this.x is wrong!
 			var _xBase = _yIncrement ? 0 : this.x;
@@ -1409,8 +1283,6 @@ dojo.declare(
                 i++;
             }
             
-            // try...catch fails the first time in FF + Firebug
-
             if(i < _contextLength || !_suggestions){ this._preventLoops = true; this.attachEvents(); return; } // IE loops! :O
 
             // display suggestions
