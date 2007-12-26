@@ -22,6 +22,7 @@ table.dojoCodeWrapper tr, table.dojoCodeWrapper tr td{
 	margin:0;
 	padding:0;
 	border:0;
+	vertical-align:top;
 }
 .dojoCodeTextAreaBand{
 	background:#eee;
