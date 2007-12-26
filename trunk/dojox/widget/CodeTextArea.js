@@ -14,16 +14,7 @@ dojo.declare(
     "dojox.widget.CodeTextArea",
 	[dijit._Widget, dijit._Templated],
     {
-        templateString: 
-        '<div class="dojoCodeTextArea" dojoAttachPoint="codeTextAreaContainer" style="height:${height}px; width:${width}px">'
-            +'<table class="dojoCodeWrapper">' +
-            		'<tbody><tr><td><div class="dojoCodeTextAreaBand" dojoAttachPoint="leftBand"><ol><li></li></ol></div></td><td>'
-            +'<div class="dojoCodeTextAreaHL" style="position:absolute;top:0;z-index:10" dojoAttachPoint="currentLineHighLight">'
-                +'<div dojoAttachPoint="caret" style="position:absolute;top:0;left:0" class="dojoCodeTextAreaCaret">&nbsp;'
-                +'</div>&nbsp;'
-            +'</div>'
-            +'<div class="dojoCodeTextAreaLines" dojoAttachPoint="lines"></div></td></tr></tbody></table>'
-        +'</div>',
+		templatePath: dojo.moduleUrl("dojox.widget", "CodeTextArea/CodeTextArea.html"),
         isContainer: true,
 
         // parameters
@@ -92,8 +83,9 @@ dojo.declare(
             this._initializeClipboard();
             this._initializeSuggestionsPopup();
             this._initializeRange();
+			this._addRowNumber({rows:100});
 	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, this._addRowNumber));
-			dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, this._removeLineNumber));
+//			dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, this._removeLineNumber));
 
             // initial status
             this._command = "";
@@ -442,7 +434,6 @@ dojo.declare(
 	                       this.setCaretPosition(this.getLineLength(y-1), y-1);
 	                    }
 	                    this.removeCharAtCaret();
-	                    //window.alert("selection length = 0");
          			}else{
 						// 
 						var startToken = this._range.startContainer.parentNode;
@@ -454,7 +445,7 @@ dojo.declare(
 						var endLine = endToken.parentNode;
 						console.debug("endLine: " + endLine);
 						var currentToken = startToken;
-						var rowsToRemove = this.indexOf(endLine) - this.indexOf(startLine) - 1;
+						var rowsToRemove = 0;//this.indexOf(endLine) - this.indexOf(startLine) - 1;
 // 						console.debug("startLine === endLine [" + (startLine.nextSibling === endLine) + "]");
 
 						this.moveCaretAtToken(startToken, startOffset);
@@ -470,21 +461,17 @@ dojo.declare(
 							currentToken = nextToken;
 						}while(nextToken && nextToken !== endToken);
 //						was }while(nextToken && currentToken !== endToken);
-
 						// startLine end
+
 						// middle lines begin
 						console.debug("middle lines");
-//						var currentLine = startLine.nextSibling;
-//						console.debug("currentLine === endLine [" + (currentLine === endLine)+ "]");
-//						var nextLine;
-//						while(currentLine && (currentLine !== endLine)){
-//							console.debug("while loop");
-//							nextLine = currentLine.nextSibling;
-//							this.removeFromDOM(currentLine);
-//							this._removeLineNumber();
-//							console.debug("removing a line...");
-//							currentLine = nextLine;
-//						}						
+						var currentLine = startLine.nextSibling;
+						var nextLine;
+						while(currentLine && (currentLine !== endLine)){
+							nextLine = currentLine.nextSibling;
+							this.removeLine(currentLine);
+							currentLine = nextLine;
+						}						
 						// middle lines end
 						
 						// endLine begin
@@ -502,15 +489,9 @@ dojo.declare(
 						
 						/* remove the last line if childNodes.length == 1, (only line-terminator)*/
 						if((endLine !== startLine) && endLine.childNodes.length == 1){
-							this.removeFromDOM(endLine);
-							this._removeLineNumber({rows:1});
+							this.removeLine(endLine);
 						}
 						
-						
-						// remove line numbers
-						if(rowsToRemove > 0){
-							this._removeLineNumber({rows:rowsToRemove});
-						}
 						
          				//this.moveCaretBy(-len, 0);
          				this.setCurrentTokenAtCaret();
@@ -791,8 +772,10 @@ dojo.declare(
             this.colorizeToken(this.currentToken);
         },
         removeLine: function(/*line*/ targetLine){
-            targetLine.parentNode.removeChild(targetLine);
+//            targetLine.parentNode.removeChild(targetLine);
+//            this._removeLineNumber({rows:1});
             dojo.publish(this.id + "::removeLine", [{rows:1}]);
+			console.debug("REMOVING A LINE");
         },
         mergeLinesAtCaret: function(){
             var _currentLine = this.currentLine;
@@ -1398,6 +1381,8 @@ dojo.declare(
             this.lines.appendChild(newLine);
             this.currentLine = newLine;
         },
+		// rowNumber comment begin
+		// put the row numbers inside the rows!
         _addRowNumber: function(/*integer*/ rowsToAdd){
         	var _previousFragment = this.leftBand.getElementsByTagName("ol")[0].innerHTML;
         	var _offset = this.leftBand.getElementsByTagName("ol")[0].getElementsByTagName("li").length + 1;
@@ -1408,15 +1393,15 @@ dojo.declare(
         		_rows += "<li></li>";
         	}
         	this.leftBand.getElementsByTagName("ol")[0].innerHTML = _previousFragment + _rows;
-        },
-        _removeLineNumber: function(/*integer*/ rowsToRemove){
-			console.debug("removing " + rowsToRemove.rows + " rows");
-        	var _endCount = rowsToRemove.rows;
-        	var lB = this.leftBand.getElementsByTagName("ol")[0];
-        	for(var i = 0; i < _endCount; i++){
-        		lB.removeChild(lB.lastChild);
-        	}
         }
-        
-    }
+//        _removeLineNumber: function(/*integer*/ rowsToRemove){
+//			console.debug("removing " + rowsToRemove.rows + " rows");
+//        	var _endCount = rowsToRemove.rows;
+//        	var lB = this.leftBand.getElementsByTagName("ol")[0];
+//        	for(var i = 0; i < _endCount; i++){
+//        		lB.removeChild(lB.lastChild);
+//        	}
+//        }
+		// rowNumber comment end
+	}
 );
