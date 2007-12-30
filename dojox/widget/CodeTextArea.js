@@ -403,6 +403,85 @@ dojo.declare(
         	var targetOffset = offset||0;
         	this.setCaretPosition(this.getTokenX(token) + targetOffset, y);
         },
+        removeSelection: function(){
+			// 
+			this._range = dojo.global.getSelection().getRangeAt(0);
+			var startToken = this._range.startContainer.parentNode;
+			var endToken = this._range.endContainer.parentNode;
+			var startOffset = this._range.startOffset;
+			var endOffset = this._range.endOffset;
+			var startLine = startToken.parentNode;
+			var endLine = endToken.parentNode;
+			var currentToken = startToken.nextSibling;
+
+			this.moveCaretAtToken(startToken, startOffset);
+
+       			this.clearSelection();
+
+			var oldContent = startToken.firstChild.data;
+			if(startToken === endToken){
+				startToken.firstChild.data = oldContent.substring(0, startOffset) + oldContent.substring(endOffset);
+			}else{
+				// startLine begin
+				startToken.firstChild.data = oldContent.substring(0, startOffset);
+				var nextToken;
+				if(currentToken && currentToken !== endToken){ // change in do..while
+					do{
+						nextToken = currentToken.nextSibling;
+						this.removeFromDOM(currentToken);
+						currentToken = nextToken;
+					}while(nextToken && nextToken !== endToken); 
+				}
+				//was }while(nextToken && currentToken !== endToken);
+				// startLine end
+
+				// middle lines begin
+				if(this.indexOf(startLine) < this.indexOf(endLine) - 1) {
+					var currentLine = startLine.nextSibling;
+					var nextLine;
+					while(currentLine && (currentLine !== endLine)){
+						nextLine = currentLine.nextSibling;
+						this.removeFromDOM(currentLine);
+						currentLine = nextLine;
+					}						
+				}
+				// middle lines end
+				
+				// endLine begin
+				currentToken = endToken.previousSibling;
+				var previousToken;
+				if(currentToken && currentToken !== startToken){ // convert in while..do
+					do{
+						previousToken = currentToken.previousSibling;
+						this.removeFromDOM(currentToken);
+						currentToken = previousToken;
+					}while(previousToken && previousToken !== startToken);
+				}
+				// endLine end
+				oldContent = endToken.firstChild.data;
+				endToken.firstChild.data = oldContent.substring(endOffset);
+
+				
+			} // end else						
+			/* remove the last line if endLine !== startLine */
+			if((endLine !== startLine)){
+				currentToken = endToken;
+				while(currentToken){
+					startLine.appendChild(currentToken.cloneNode(true));
+					currentToken = currentToken.nextSibling;
+				}
+				this.removeFromDOM(endLine);
+			}
+
+			if(!startToken.firstChild.data.length){ this.removeFromDOM(startToken) };
+			if(!endToken.firstChild.data.length){ this.removeFromDOM(endToken) };
+			
+      				this.setCurrentTokenAtCaret();
+      				if(this.currentToken && this.previousToken){
+            	this.mergeSimilarTokens(this.previousToken, this.currentToken);
+            }
+            this.colorizeToken(this.currentToken);
+        },
         keyPressHandler: function(evt){
             if (this._preventLoops){
                 this._preventLoops = false;
@@ -437,83 +516,7 @@ dojo.declare(
 	                    }
 	                    this.removeCharAtCaret();
          			}else{
-						// 
-						this._range = dojo.global.getSelection().getRangeAt(0);
-						var startToken = this._range.startContainer.parentNode;
-						var endToken = this._range.endContainer.parentNode;
-						var startOffset = this._range.startOffset;
-						var endOffset = this._range.endOffset;
-						var startLine = startToken.parentNode;
-						var endLine = endToken.parentNode;
-						var currentToken = startToken.nextSibling;
-
-						this.moveCaretAtToken(startToken, startOffset);
-
-	         			this.clearSelection();
-
-						var oldContent = startToken.firstChild.data;
-						if(startToken === endToken){
-							startToken.firstChild.data = oldContent.substring(0, startOffset) + oldContent.substring(endOffset);
-						}else{
-							// startLine begin
-							startToken.firstChild.data = oldContent.substring(0, startOffset);
-							var nextToken;
-							if(currentToken && currentToken !== endToken){ // change in do..while
-								do{
-									nextToken = currentToken.nextSibling;
-									this.removeFromDOM(currentToken);
-									currentToken = nextToken;
-								}while(nextToken && nextToken !== endToken); 
-							}
-	//						was }while(nextToken && currentToken !== endToken);
-							// startLine end
-	
-							// middle lines begin
-							if(this.indexOf(startLine) < this.indexOf(endLine) - 1) {
-								var currentLine = startLine.nextSibling;
-								var nextLine;
-								while(currentLine && (currentLine !== endLine)){
-									nextLine = currentLine.nextSibling;
-									this.removeFromDOM(currentLine);
-									currentLine = nextLine;
-								}						
-							}
-							// middle lines end
-							
-							// endLine begin
-							currentToken = endToken.previousSibling;
-							var previousToken;
-							if(currentToken && currentToken !== startToken){ // convert in while..do
-								do{
-									previousToken = currentToken.previousSibling;
-									this.removeFromDOM(currentToken);
-									currentToken = previousToken;
-								}while(previousToken && previousToken !== startToken);
-							}
-							// endLine end
-							oldContent = endToken.firstChild.data;
-							endToken.firstChild.data = oldContent.substring(endOffset);
-
-							
-						} // end else						
-						/* remove the last line if endLine !== startLine */
-						if((endLine !== startLine)){
-							currentToken = endToken;
-							while(currentToken){
-								startLine.appendChild(currentToken.cloneNode(true));
-								currentToken = currentToken.nextSibling;
-							}
-							this.removeFromDOM(endLine);
-						}
-
-						if(!startToken.firstChild.data.length){ this.removeFromDOM(startToken) };
-						if(!endToken.firstChild.data.length){ this.removeFromDOM(endToken) };
-						
-         				this.setCurrentTokenAtCaret();
-         				if(this.currentToken && this.previousToken){
-			            	this.mergeSimilarTokens(this.previousToken, this.currentToken);
-			            }
-			            this.colorizeToken(this.currentToken);
+						this.removeSelection();
          			}
                 break;
                 case dk.DELETE:
