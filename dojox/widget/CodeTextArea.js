@@ -507,7 +507,7 @@ dojo.declare(
          			//this.clearSelection();
          			var selection = this.getSelection();
          			var len = selection.getSelectedText().length;
-         			if(len == 0){
+         			if(!len){
          				if(!(x||y)){ return; }
 	                    if(x){
 	                       this.setCaretPosition(x-1, y);
@@ -524,13 +524,13 @@ dojo.declare(
                         this._specialKeyPressed = false;
                         break; 
                     }
-         			if(selection.length == 0){
+         			var selection = this.getSelection();
+         			var len = selection.getSelectedText().length;
+         			if(!len){
 	                    this.removeCharAtCaret();
          			}else{
-         				
-	         			selection.remove();
+						this.removeSelection();
          			}
-                    this.removeCharAtCaret();
                 break;
                 case dk.DOWN_ARROW:
                     if(charCode==0){
