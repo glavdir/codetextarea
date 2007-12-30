@@ -62,6 +62,8 @@ dojo.declare(
         _targetToken: null,
         _blockedKeyCombinations: {},
         _preventLoops: false,
+        _undoStack: [],
+        _redoStack: [],
         _symbols: [
         	{"." : "context-separator"},
         	{" " : "separator"},
@@ -85,7 +87,6 @@ dojo.declare(
             this._initializeRange();
 			this._addRowNumber({rows:100});
 	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, this._addRowNumber));
-//			dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, this._removeLineNumber));
 
             // initial status
             this._command = "";
@@ -284,9 +285,10 @@ dojo.declare(
 				//dojo.doc.selection.clear(); // remove from document!
 				//r.deleteContents();
 				//r.collapsed = true;
-				this._range.setStart(this.currentToken.firstChild, 0);
-				this._range.setEnd(this.currentToken.firstChild, 0);
-				this.selectRange(this._range);
+//				this._range.setStart(this.currentToken.firstChild, 0);
+//				this._range.setEnd(this.currentToken.firstChild, 0);
+//				this.selectRange(this._range);
+				_document.selection.empty();
 				//r._select(); //mmmpf, private method
 			}else if(dojo.global["getSelection"]){
 				var selection = dojo.global.getSelection();
@@ -436,64 +438,77 @@ dojo.declare(
 	                    this.removeCharAtCaret();
          			}else{
 						// 
+						this._range = dojo.global.getSelection().getRangeAt(0);
 						var startToken = this._range.startContainer.parentNode;
 						var endToken = this._range.endContainer.parentNode;
 						var startOffset = this._range.startOffset;
 						var endOffset = this._range.endOffset;
 						var startLine = startToken.parentNode;
-						console.debug("startLine: " + startLine);
 						var endLine = endToken.parentNode;
-						console.debug("endLine: " + endLine);
-						var currentToken = startToken;
-						var rowsToRemove = 0;//this.indexOf(endLine) - this.indexOf(startLine) - 1;
-// 						console.debug("startLine === endLine [" + (startLine.nextSibling === endLine) + "]");
+						var currentToken = startToken.nextSibling;
 
 						this.moveCaretAtToken(startToken, startOffset);
-	         			selection.remove();
-						// startLine begin
-						var nextToken;
-						do{
-							nextToken = currentToken.nextSibling;
-							if(!currentToken.firstChild || !currentToken.firstChild.data){
-								console.debug("removing, block 1");
-								this.removeFromDOM(currentToken);
-							}
-							currentToken = nextToken;
-						}while(nextToken && nextToken !== endToken);
-//						was }while(nextToken && currentToken !== endToken);
-						// startLine end
 
-						// middle lines begin
-						console.debug("middle lines");
-						var currentLine = startLine.nextSibling;
-						var nextLine;
-						while(currentLine && (currentLine !== endLine)){
-							nextLine = currentLine.nextSibling;
-							this.removeLine(currentLine);
-							currentLine = nextLine;
-						}						
-						// middle lines end
-						
-						// endLine begin
-						console.debug("end line");
-						currentToken = endToken;
-						var previousToken = endToken.previousSibling;
-						do{
-							previousToken = currentToken.previousSibling;
-							if(!currentToken.firstChild){
-								this.removeFromDOM(currentToken);
+	         			this.clearSelection();
+
+						var oldContent = startToken.firstChild.data;
+						if(startToken === endToken){
+							startToken.firstChild.data = oldContent.substring(0, startOffset) + oldContent.substring(endOffset);
+						}else{
+							// startLine begin
+							startToken.firstChild.data = oldContent.substring(0, startOffset);
+							var nextToken;
+							if(currentToken && currentToken !== endToken){ // change in do..while
+								do{
+									nextToken = currentToken.nextSibling;
+									this.removeFromDOM(currentToken);
+									currentToken = nextToken;
+								}while(nextToken && nextToken !== endToken); 
 							}
-							currentToken = previousToken;
-						}while(previousToken && previousToken !== startToken);
-						// endLine end
-						
-						/* remove the last line if childNodes.length == 1, (only line-terminator)*/
-						if((endLine !== startLine) && endLine.childNodes.length == 1){
-							this.removeLine(endLine);
+	//						was }while(nextToken && currentToken !== endToken);
+							// startLine end
+	
+							// middle lines begin
+							if(this.indexOf(startLine) < this.indexOf(endLine) - 1) {
+								var currentLine = startLine.nextSibling;
+								var nextLine;
+								while(currentLine && (currentLine !== endLine)){
+									nextLine = currentLine.nextSibling;
+									this.removeFromDOM(currentLine);
+									currentLine = nextLine;
+								}						
+							}
+							// middle lines end
+							
+							// endLine begin
+							currentToken = endToken.previousSibling;
+							var previousToken;
+							if(currentToken && currentToken !== startToken){ // convert in while..do
+								do{
+									previousToken = currentToken.previousSibling;
+									this.removeFromDOM(currentToken);
+									currentToken = previousToken;
+								}while(previousToken && previousToken !== startToken);
+							}
+							// endLine end
+							oldContent = endToken.firstChild.data;
+							endToken.firstChild.data = oldContent.substring(endOffset);
+
+							
+						} // end else						
+						/* remove the last line if endLine !== startLine */
+						if((endLine !== startLine)){
+							currentToken = endToken;
+							while(currentToken){
+								startLine.appendChild(currentToken.cloneNode(true));
+								currentToken = currentToken.nextSibling;
+							}
+							this.removeFromDOM(endLine);
 						}
+
+						if(!startToken.firstChild.data.length){ this.removeFromDOM(startToken) };
+						if(!endToken.firstChild.data.length){ this.removeFromDOM(endToken) };
 						
-						
-         				//this.moveCaretBy(-len, 0);
          				this.setCurrentTokenAtCaret();
          				if(this.currentToken && this.previousToken){
 			            	this.mergeSimilarTokens(this.previousToken, this.currentToken);
@@ -772,8 +787,7 @@ dojo.declare(
             this.colorizeToken(this.currentToken);
         },
         removeLine: function(/*line*/ targetLine){
-//            targetLine.parentNode.removeChild(targetLine);
-//            this._removeLineNumber({rows:1});
+            this.removeFromDOM(targetLine);
             dojo.publish(this.id + "::removeLine", [{rows:1}]);
 			console.debug("REMOVING A LINE");
         },
@@ -1381,8 +1395,6 @@ dojo.declare(
             this.lines.appendChild(newLine);
             this.currentLine = newLine;
         },
-		// rowNumber comment begin
-		// put the row numbers inside the rows!
         _addRowNumber: function(/*integer*/ rowsToAdd){
         	var _previousFragment = this.leftBand.getElementsByTagName("ol")[0].innerHTML;
         	var _offset = this.leftBand.getElementsByTagName("ol")[0].getElementsByTagName("li").length + 1;
@@ -1394,14 +1406,5 @@ dojo.declare(
         	}
         	this.leftBand.getElementsByTagName("ol")[0].innerHTML = _previousFragment + _rows;
         }
-//        _removeLineNumber: function(/*integer*/ rowsToRemove){
-//			console.debug("removing " + rowsToRemove.rows + " rows");
-//        	var _endCount = rowsToRemove.rows;
-//        	var lB = this.leftBand.getElementsByTagName("ol")[0];
-//        	for(var i = 0; i < _endCount; i++){
-//        		lB.removeChild(lB.lastChild);
-//        	}
-//        }
-		// rowNumber comment end
 	}
 );
