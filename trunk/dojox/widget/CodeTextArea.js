@@ -258,6 +258,7 @@ dojo.declare(
             console.debug("range created");
             var str = "";
             var ta = document.createElement("textarea");
+            ta.id="tatest";
             ta.style.height = "300px";
             document.body.appendChild(ta);
             for(var i in this._range){
@@ -405,7 +406,12 @@ dojo.declare(
         },
         removeSelection: function(){
 			// 
-			this._range = dojo.global.getSelection().getRangeAt(0);
+			if(dojo.doc["selection"]){
+				var _sel = dijit.range.getSelection(window);
+				this._range = _sel.getRangeAt(0);
+			}else{
+				this._range = dojo.global.getSelection().getRangeAt(0); // FF only
+			}
 			var startToken = this._range.startContainer.parentNode;
 			var endToken = this._range.endContainer.parentNode;
 			var startOffset = this._range.startOffset;
@@ -678,6 +684,22 @@ dojo.declare(
                         this._command = cmd.PASTE;
                         this._specialKeyPressed = true;
                         return false;
+                    }
+                break;
+                case 120: // x
+                    if(!evt.ctrlKey){
+                        this._specialKeyPressed = false;
+                    }else{
+                        // ctrl + x
+                        this._clipboard.value = this.getSelectedText();
+                        this.removeSelection();
+                        this._clipboard.focus();
+                        this._clipboard.select();
+//                        this._clipboard.value = "";
+//                        this._clipboard.focus();
+//                        this._command = cmd.PASTE;
+                        this._specialKeyPressed = true;
+                        return;
                     }
                 break;
                 case 32: // space
