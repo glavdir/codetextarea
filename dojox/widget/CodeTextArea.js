@@ -4,7 +4,7 @@ dojo.require("dijit._editor.selection");
 dojo.require("dijit._editor.range");
 
 dojo.require("dijit._Widget");
-
+dojo.require("dojo.data.ItemFileReadStore");
 // replace dojox.data.dom.textContent
 dojo.require("dojox.data.dom");
 dojo.require("dijit._Templated");
@@ -62,8 +62,9 @@ dojo.declare(
         _targetToken: null,
         _blockedKeyCombinations: {},
         _preventLoops: false,
+        _stackIndex: 0,
         _undoStack: [],
-        _redoStack: [],
+        _currentAction: "",
         _symbols: [
         	{"." : "context-separator"},
         	{" " : "separator"},
@@ -256,15 +257,6 @@ dojo.declare(
             //this._range = dojo.doc.createRange ? dojo.doc.createRange() : dijit.range.create();
             this._range = dijit.range.create();
             console.debug("range created");
-            var str = "";
-            var ta = document.createElement("textarea");
-            ta.id="tatest";
-            ta.style.height = "300px";
-            document.body.appendChild(ta);
-            for(var i in this._range){
-            	//console.debug(i);
-	            ta.value += i + "\n";
-            }
         },
         getSelection: function(){
         	return dijit._editor.selection;
@@ -506,6 +498,9 @@ dojo.declare(
             var resCode = charCode||keyCode;
             var cmd = this.commands;
             switch(resCode){
+            	case 0:
+            		// ALT-GR
+            	break;
                 case dk.ESCAPE:
                 break;
                 case dk.BACKSPACE:
@@ -702,6 +697,30 @@ dojo.declare(
                         return;
                     }
                 break;
+                case 122: // z
+                    if(!evt.ctrlKey){
+                        this._specialKeyPressed = false;
+                    }else{
+                        // ctrl + z
+                        this._specialKeyPressed = true;
+                        var _undoStack = this._undoStack;
+                        if(!_undoStack.length){ break; }
+						this.undo();
+                        return;
+                    }
+                break;
+                case 121: // y
+                    if(!evt.ctrlKey){
+                        this._specialKeyPressed = false;
+                    }else{
+                        // ctrl + y
+                        this._specialKeyPressed = true;
+//                        var _redoStack = this._redoStack;
+//                        if(!_redoStack.length){ break; }
+						this.redo();
+                        return;
+                    }
+                break;
                 case 32: // space
                     if(!evt.ctrlKey){
                         this._specialKeyPressed = false;
@@ -728,6 +747,14 @@ dojo.declare(
             }
             dojo.stopEvent(evt); // prevent default action (opera) // to TEST!
 //            evt.preventDefault(); // prevent default action (opera)
+        },
+        undo: function(){
+        	this._undoRedo(this._undoStack);
+        },
+        redo: function(){
+//        	this._undoRedo(this._redoStack);
+        },
+        _undoRedo: function(/*array*/ stack){
         },
         getSelectionStartToken: function(){
         	return this._range.startContainer.parentNode;
@@ -1215,6 +1242,8 @@ dojo.declare(
 						_currentChar = "&lt;";
 					}else if(_currentChar == ">"){
 						_currentChar = "&gt;";
+					}else if(_currentChar == ";"){
+						//window.alert("fullstop");
 					}
 					// html END
 		            _currentType = this.matchSymbol({
@@ -1243,6 +1272,13 @@ dojo.declare(
 								_xIncrement += _unparsedToken.length;
 							}
 						}
+						// nr 06-jan-2008b
+						if(k == row.length - 1 && _currentType !== _previousType){
+							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
+							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _currentType + "\">" + _currentChar + "</span>";
+							_xIncrement += _unparsedToken.length;
+						}
+						// nr 06-jan-2008e
 						_workingToken = _currentChar;
 						_unparsedToken = _oldChar;
 						_previousType = _currentType;
