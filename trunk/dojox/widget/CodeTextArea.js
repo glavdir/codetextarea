@@ -1274,7 +1274,7 @@ dojo.declare(
 						}
 						// nr 06-jan-2008b
 						if(k == row.length - 1 && _currentType !== _previousType){
-							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
+							var _class = (_currentChar in cDict) ? cDict[_currentChar].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _currentType + "\">" + _currentChar + "</span>";
 							_xIncrement += _unparsedToken.length;
 						}
