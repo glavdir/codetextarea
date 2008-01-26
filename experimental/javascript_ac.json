@@ -1,4 +1,10 @@
 {   
+	links: [
+		{
+			link : "", 
+			target : "window"
+		}
+	],
     children: {
     	"window": {
             link: {},
@@ -6,6 +12,8 @@
                 "document": {
                     children: {
                         "body": {
+                        	children: {
+                        	}
                         },
                         "focus": {
                         },
@@ -19,5 +27,5 @@
                 }
             }
     	}
-    }
+    },
 }

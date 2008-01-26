@@ -63,13 +63,16 @@ dojo.declare(
         _blockedKeyCombinations: {},
         _preventLoops: false,
 		// undo vars start
-        _undoStackIndex: 0,
-        _undoStack: [],
-        _currentAction: "",
-        _undoObject: "",
-        _undoData: "",
-        _undoIndex: 0,
-        _undoCoords: {x:0, y:0},
+       	_undoStack: [],
+       	_undoStackIndex: 0,
+		_undoObject : {
+        	action: "",
+        	target: "",
+        	data: "",
+        	index: 0,
+        	coords: {x:0, y:0}
+        },
+        _lastEditCoords: {x:0,y:0},
 		// undo vars end
         _symbols: [
         	{"." : "context-separator"},
@@ -113,7 +116,7 @@ dojo.declare(
             this._caret.style.right = "-500px";
             // end this._caret section.
             this.setCaretPosition(0, 0); 
-            this._undoObject = this.currentToken;
+            this._undoObject.target = this.currentToken;
             document.body.appendChild(this._caret);    
         },
         _initializeSuggestionsPopup: function(){
@@ -189,7 +192,32 @@ dojo.declare(
             this.colorsDictionary = cDict;
         },
         _autocompleteFiller: function(data){
+        	console.log("example: " + data.children);
+        	data = this._expandAutoCompleteLinks(data);
             this.autocompleteDictionary = data;
+        },
+        _expandAutoCompleteLinks: function(/*object literal*/ data){
+        	if(data.links){
+        		var links = data.links || [];
+        		// foreach pair (link --> target)
+        		for(var i = 0; i < links.length; i++){
+        			var linkPath = links[i]["link"].split(".");
+        			var targetPath = links[i]["target"].split(".");
+        			var currentLink = data;
+        			var currentTarget = data;
+        			for(var j = 0; j < linkPath.length; j++){
+        				currentLink = currentLink.children[linkPath[j]];
+        			}
+        			currentLink = currentLink ? currentLink : data;
+        			for(var j = 0; j < targetPath.length; j++){
+        				currentTarget = currentTarget.children[targetPath[j]];
+        			}
+        			for(var k in currentTarget.children){
+	        			currentLink.children[k] = currentTarget.children[k];
+        			} 
+        		}
+        	}
+       		return data;
         },
         _dictionaryLoadError: function(error){
             window.alert(error);
@@ -704,7 +732,7 @@ dojo.declare(
                         // ctrl + z
                         this._specialKeyPressed = true;
                         var _undoStack = this._undoStack;
-                        if(!_undoStack.length){ break; }
+                        if(!this._undoObject.data){ break; }
 						this.undo();
                         return;
                     }
@@ -748,8 +776,45 @@ dojo.declare(
             dojo.stopEvent(evt); // prevent default action (opera) // to TEST!
 //            evt.preventDefault(); // prevent default action (opera)
         },
+        pushIntoUndoStack: function(/*object literal*/ undoObject){
+        	console.log("pushIntoUndoStack, coords: (" + this.x + " " + this.y + ")");
+           	this._undoStack.push(undoObject);
+          	this._undoStackIndex++;
+          	this._undoObject.coords = {
+          		x: this.x,
+          		y: this.y
+          	};
+        },
         undo: function(){
-        	this._undoRedo(this._undoStack);
+        	var _undoObject = this._undoObject;
+//          	this._undoStack.push({action: "splitLineAtCaret", data: this._undoData, x: this.x, y: this.y});
+//        _undoStackIndex: 0,
+//        _undoStack: [],
+//        _currentAction: "",
+//        _undoTarget: "",
+//        _undoData: "",
+//        _undoIndex: 0,
+//        _undoCoords: {x:0, y:0},
+			console.log("UNDO");
+			console.log("undo action: " + this._currentAction);    	
+			console.log("undo data: " + this._undoObject.data);        	
+			console.log("undo x: " + this._undoObject.coords.x);        	
+			console.log("undo y: " + this._undoObject.coords.y);
+			if(this._currentAction == "writeToken"){
+				var charsToRemove = _undoObject.data.length;
+				var coords = _undoObject.coords;
+				this.setCaretPosition(coords.x, coords.y);
+				for(var i = 0; i < charsToRemove; i++){
+					this.removeCharAtCaret();				
+				}
+			}
+			if(this._undoStackIndex){
+				this._undoStackIndex--;
+				this._undoObject = this._undoStack.pop();
+			}else{
+				this._undoObject = {};
+			}
+        	//this._undoRedo(this._undoObject.undoStack);
         },
         redo: function(){
 //        	this._undoRedo(this._redoStack);
@@ -903,10 +968,9 @@ dojo.declare(
             var _oldY = this.y;
 			// nr 21-jan-2008 start
 			console.debug("push into undostack: splitLineAtCaret");
-          	this._undoStack.push({action: "splitLineAtCaret", data: this._undoData, x: this.x, y: this.y});
-          	this._undoStackIndex++;
-          	this._undoObject = this.currentToken;
-          	this._undoData = "";
+           	this.pushIntoUndoStack({action: this._undoObject.action, data: this._undoObject.data, coords: this._undoObject.coords});
+          	this._undoObject.target = this.currentToken;
+          	this._undoObject.data = "";
 			// nr 21-jan-2008 end
         },
         // TODO: find a better name for these methods
@@ -1021,10 +1085,8 @@ dojo.declare(
                 var token = tokens[i];
                 this.writeToken(token);
                 if(moveCaret){ this.moveCaretBy(token.length, 0); }
-                this._undoCoords = {
-                	x : this.x,
-                	y : this.y
-                };
+                // 26-jan-2008 not sure
+                this._lastEditCoords = {x:this.x, y:this.y};
             }
         },
         addNewLine: function(/*string*/ position){
@@ -1075,6 +1137,19 @@ dojo.declare(
         },
         writeToken: function(/*String*/ content, /*Boolean*/ moveCaret, /*Boolean*/ substCaret){
             if(!content){ return; }
+            
+            // put in a method START
+            if(this._currentAction && this._currentAction != "writeToken"){
+	           	this.pushIntoUndoStack({action: this._undoObject.action, data: this._undoObject.data, coords: this._undoObject.coords});
+            }else if(this._currentAction == ""){ // _currentAction == ""
+            	console.log("setting undo coords");
+				this._undoObject.coords = {
+					x: this.x,
+					y: this.y
+				}
+            }
+            this._currentAction = "writeToken"; 
+            // put in a method END
 
             // tokenType
             // find a way to add different token types!
@@ -1114,14 +1189,13 @@ dojo.declare(
                 // *************************************************************
                 if(tokenType == currentTokenType){// subcase 1: same token type
 					// nr 12-jan-2008 undo, start section
-					if(this._undoObject === this.currentToken && (this._undoCoords.x != this.x || this._undoCoords.y != this.y)){
-                		console.log("DIFFERENT CARET POSITION: push into undoStack, in a Token, currentTokenType === tokenType. data: <" + this._undoData + ">");
-	                	this._undoStack.push({action: "writeToken", data: this._undoData, x: this.x, y: this.y});
-	                	this._undoStackIndex++;
-	                	this._undoData = content;
-                	}else if(this._undoObject === this.currentToken && (this._undoCoords.x == this.x || this._undoCoords.y == this.y)){
-	                	this._undoData += content;
-                		console.log("SAME CARET POSITION: no push, data: <" + this._undoData + ">");
+					if(this._undoObject.target === this.currentToken && (this._lastEditCoords.x != this.x || this._lastEditCoords.y != this.y)){
+                		console.log("DIFFERENT CARET POSITION: push into undoStack, in a Token, currentTokenType === tokenType. data: <" + this._undoObject.data + ">");
+			           	this.pushIntoUndoStack({action: this._undoObject.action, data: this._undoObject.data, coords: this._undoObject.coords});
+	                	this._undoObject.data = content;
+                	}else if(this._undoObject.target === this.currentToken && (this._undoObject.coords.x == this.x || this._undoObject.coords.y == this.y)){
+	                	this._undoObject.data += content;
+                		console.log("SAME CARET POSITION: no push, data: <" + this._undoObject.data + ">");
                 	}
 					// nr 12-jan-2008 undo, end section
                     // in the currentToken
@@ -1138,10 +1212,9 @@ dojo.declare(
 					// nr 12-jan-2008 undo, start section
 //                	this._undoStack.push({action:"writeToken", data:_data});
 //                	this._undoStackIndex++;
-               		console.log("push into undoStack, in a Token, different types. data: <" + this._undoData + ">");
-                	this._undoStack.push({action: "writeToken", data: this._undoData, x: this.x, y: this.y});
-                	this._undoStackIndex++;
-                	this._undoData = content;
+               		console.log("push into undoStack, in a Token, different types. data: <" + this._undoObject.data + ">");
+		           	this.pushIntoUndoStack({action: this._undoObject.action, data: this._undoObject.data, coords: this._undoObject.coords});
+                	this._undoObject.data = content;
 					// nr 12-jan-2008 undo, end section
 
                     var firstText = _data.substring(0, this.caretIndex);
@@ -1159,10 +1232,10 @@ dojo.declare(
                         innerToken.setAttribute("tokenType", tokenType);
                         dojo.place(innerToken, currentToken, "before");
                         // nr 21-jan-2008 start
-                        this._undoObject = innerToken; // _undoData is already = content
+                        this._undoObject.target = innerToken; // _undoData is already = content
                         // nr 21-jan-2008 end
                         // nr 16-jan-2008 start
-		                console.log("1) new _undoData: <" + this._undoData + ">");
+		                console.log("1) new _undoData: <" + this._undoObject.data + ">");
                         // nr 16-jan-2008 end
 
                         if(tokenType == "paste-delimiter"){
@@ -1188,7 +1261,7 @@ dojo.declare(
                 var _targetToken;
                 // nr 21-jan-2008 start
                 // correct?
-                this._undoData += content;
+                this._undoObject.data += content;
                 // nr 21-jan-2008 end
                 if(_prev && _prev.getAttribute("tokenType") == tokenType){
                     _targetToken = _prev;
@@ -1199,11 +1272,13 @@ dojo.declare(
                     _targetToken.replaceChild(document.createTextNode(content + _targetToken.firstChild.data), _targetToken.firstChild);
                 }else{
                     // create a new token
-	                this._undoData = content;
+                    // 26-jan-2008b
+		           	this.pushIntoUndoStack({action: this._undoObject.action, data: this._undoObject.data, coords: this._undoObject.coords});
+                    // 26-jan-2008e
+	                this._undoObject.data = content;
                     _targetToken = document.createElement(wrapper);
                     _targetToken.appendChild(document.createTextNode(content));
                     _targetToken.setAttribute("tokenType", tokenType);
-                    console.debug("HERE: push into undo stack!");
                     if(_prev){
                         dojo.place(_targetToken, _prev, "after");
                         if(tokenType == "paste-delimiter"){
@@ -1218,13 +1293,13 @@ dojo.declare(
                 }
                 // nr 16-jan-2008 start
                 // nr 21-jan-2008 start
-                this._undoObject = _targetToken;
-                //this._undoData = _targetToken.firstChild.data;
-                console.log("2) _undoData: <" + this._undoData + ">");
+                this._undoObject.target = _targetToken;
+                //this._undoObject.data = _targetToken.firstChild.data;
+                console.log("2) _undoData: <" + this._undoObject.data + ">");
                 // nr 21-jan-2008 end
                 // nr 16-jan-2008 end
                 this.currentToken = _targetToken;
-                this._undoIndex = this._currentIndex;
+                this._undoObject.index = this._currentIndex;
 //                if(moveCaret){ this.moveCaretBy(content.length, 0); }
             }
         },
