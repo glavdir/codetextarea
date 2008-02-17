@@ -517,7 +517,7 @@ dojo.declare(
             dojo.publish(this.id + "::KeyPressed", [{source:this,evt:evt}]);
             var keyCode = evt.keyCode;
             var charCode = evt.charCode;
-//            console.debug("2-> charCode/keyCode: "+evt.charCode+"/"+evt.keyCode);
+            //console.debug("2-> charCode/keyCode: "+evt.charCode+"/"+evt.keyCode);
             var dk = dojo.keys;
             var x = this.x;
             var y = this.y;
@@ -542,7 +542,7 @@ dojo.declare(
 	                    }else if(y){
 	                       this.setCaretPosition(this.getLineLength(y-1), y-1);
 	                    }
-	                    this.removeCharAtCaret();
+	                    var changes = this.removeCharAtCaret();
          			}else{
 						this.removeSelection();
          			}
@@ -557,7 +557,7 @@ dojo.declare(
          			var selection = this.getSelection();
          			var len = selection.getSelectedText().length;
          			if(!len){
-	                    this.removeCharAtCaret();
+	                    var changes = this.removeCharAtCaret();
          			}else{
 						this.removeSelection();
          			}
@@ -790,11 +790,12 @@ dojo.declare(
         undo: function(){
 			var undoStack = this._undoStack;
         	if(!undoStack.length || this._undoStackIndex < 0){ console.log("nothing to (un)do"); return; }
-			console.log("this._undoStack.length: " + this._undoStack.length);
-			console.log("this._undoStackIndex: " + this._undoStackIndex);
+			console.log("[undo] this._undoStack.length: " + this._undoStack.length);
+			console.log("[undo] this._undoStackIndex: " + this._undoStackIndex);
 			var undoObject = undoStack[this._undoStackIndex];
 			if(undoObject.action == "writeToken"){
 				var charsToRemove = undoObject.data.length;
+				console.log("[undo] charsToRemove: " + charsToRemove);
 				var coords = undoObject.coords;
 				this.setCaretPosition(coords.x, coords.y);
 				for(var i = 0; i < charsToRemove; i++){
@@ -806,23 +807,24 @@ dojo.declare(
 			}
         },
         redo: function(){
-            console.log("redo: " + this._undoStackIndex + "  " + this._undoStack.length);
-        	if(this._undoStackIndex == this._undoStack.length){ return; }
-			var redoObject = this._undoStack[this._undoStackIndex];
-			for(var i in redoObject){
-				console.debug(i + " --> " + redoObject[i]);
+			var undoStack = this._undoStack;
+			console.log("[redo] this._undoStackIndex: " + this._undoStackIndex + "; undoStack.length: " + undoStack.length);
+        	if(!undoStack.length || /*this._undoStackIndex < 0 ||*/ this._undoStackIndex == undoStack.length - 1){ console.log("nothing to (re)do"); return; }
+			console.log("[redo] this._undoStack.length: " + this._undoStack.length);
+			console.log("[redo] this._undoStackIndex: " + this._undoStackIndex);
+			this._undoStackIndex++;
+			var undoObject = undoStack[this._undoStackIndex];
+			if(undoObject.action == "writeToken"){
+				var coords = undoObject.coords;
+				//this.setCaretPosition(coords.x, coords.y);
+				this.writeToken(undoObject.data);
+				// 16-feb-2008b
+                //this._lastEditCoords = {x:this.x, y:this.y};
+//				this.moveCaretAtToken();
+				// 16-feb-2008e
+
+				this.moveCaretBy(undoObject.data.length, 0);
 			}
-			
-			
-			this._undoObject = redoObject;
-			var coords = redoObject.coords;
-			this.setCaretPosition(coords.x, coords.y);
-			if(redoObject.action == "writeToken"){
-				this.writeToken(redoObject.data);
-				this._undoStackIndex++;
-			}       	
-        },
-        _undoRedo: function(/*array*/ stack){
         },
         getSelectionStartToken: function(){
         	return this._range.startContainer.parentNode;
@@ -880,6 +882,7 @@ dojo.declare(
             this.write("    ", true);
         },
         removeCharAtCaret: function(){
+			var removedChar;
             var _currentToken = this.currentToken;
             var _previousTokenType = _currentToken.getAttribute("tokenType");
             if(this.y == this.numLines() - 1 && _previousTokenType == "line-terminator"){
@@ -888,11 +891,13 @@ dojo.declare(
             var _content = _currentToken.firstChild.data;
             var _tokenSize = _content.length;
             if(_tokenSize > 1){
-                _currentToken.firstChild.data = _content.substring(0,this.caretIndex) + 
-                    _content.substring(this.caretIndex+1);
+				removedChar = _content.substring(this.caretIndex, this.caretIndex + 1)
+                _currentToken.firstChild.data = _content.substring(0, this.caretIndex) + 
+                    _content.substring(this.caretIndex + 1);
                 this.colorizeToken(_currentToken);
             }else{
                 _currentToken.parentNode.removeChild(_currentToken);
+				removedChar = _currentToken.firstChild.data;
             }
 
             this.setCurrentTokenAtCaret();
@@ -905,6 +910,8 @@ dojo.declare(
             this.mergeSimilarTokens(_prevToken, _currentToken);
             this.setCurrentTokenAtCaret();
             this.colorizeToken(this.currentToken);
+			console.log("[removeCharAtCaret] removedChar: " + removedChar);
+			return {data: removedChar};
         },
         removeLine: function(/*line*/ targetLine){
             this.removeFromDOM(targetLine);
@@ -1090,10 +1097,12 @@ dojo.declare(
 				// nr 06-feb-2008b
 				var _currentCoords = {x:this.x, y:this.y};
 				// nr 06-feb-2008e
+				if(token){ this.removeRedoHistory(); }
                 var changes = this.writeToken(token);
 
 				// nr 06-feb-2008b
 				console.log("preconditions: this._undoStack.length -> " + this._undoStack.length 
+				+ " changes.data -> '" +	changes.data + "'"
 				+ " changes.typeChange -> " +	changes.typeChange 
 				+ " this.x -> " + this.x + 
 				" this._lastEditCoords.x + -> " + this._lastEditCoords.x 
@@ -1189,8 +1198,9 @@ dojo.declare(
 			return this._undoStack[this._undoStack.length - 1];
 		},
         writeToken: function(/*String*/ content, /*Boolean*/ moveCaret, /*Boolean*/ substCaret){
+			var originalContent = content;
             if(!content){ return; }
-			this.removeRedoHistory();
+			console.log("[writeToken] content: " + content);
 			var typeChange = false;
 
             // tokenType
@@ -1202,6 +1212,8 @@ dojo.declare(
                 currentChar : content.charAt(0),
                 def : "word"
             });
+			console.log("[writeToken][17-feb-2008] tokenType: " + tokenType);
+			console.log("[writeToken][17-feb-2008] content.charAt(0): <" + content.charCodeAt(0)+ ">");
 			// nr 15-dec-2007b
 			// substitution for " " with \u00a0, because Firefox can't select
 			// a string with spaces
@@ -1300,7 +1312,7 @@ dojo.declare(
                 }
                 this.currentToken = _targetToken;
             }
-			return {data: content, typeChange: typeChange};
+			return {data: originalContent, typeChange: typeChange};
         },
         substCaretPosition: function(){
             this.writeToken("-", false, "paste-delimiter"); // params: token, moveCaret, substCaret
