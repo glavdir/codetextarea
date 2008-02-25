@@ -28,7 +28,7 @@
 .dojoCodeTextAreaLines .browser{
 	color:#00c;
 	font-weight:normal;
-	line-height:16px;
+	line-height:17px;
 }
 .dojoCodeTextAreaLines .dom-method{
 	color:#000;
@@ -56,6 +56,15 @@
 }
 .dojoCodeTextAreaLines .event{
 	color:green;
+	font-style:italic;
+	line-height:15px;
+}
+.dojoCodeTextAreaLines .dojoNamespace{
+	color:black;
+	font-weight:bold;
+}
+.dojoCodeTextAreaLines .dojoFunction{
+	color:black;
 	font-style:italic;
 	line-height:15px;
 }
