@@ -616,6 +616,13 @@ dojo.declare(
                         this._specialKeyPressed = false;
                     }
                 break;
+                case dk.LEFT_WINDOW:
+                    if(charCode==0){
+                    }else{
+                        // open square bracket [
+                        this._specialKeyPressed = false;
+                    }
+                break;
                 case dk.LEFT_ARROW:
                     if(charCode==0){
                         if(x){
@@ -878,7 +885,7 @@ dojo.declare(
 			var undoObject = undoStack[this._undoStackIndex];
 			var coords = undoObject.coords;
 			if(undoObject.action == "writeToken"){
-				//this.setCaretPosition(coords.x, coords.y);
+				this.setCaretPosition(coords.x, coords.y);
 				this.writeToken(undoObject.data);
 				this.moveCaretBy(undoObject.data.length, 0);
 			}else if(undoObject.action == "removeCharBS"){

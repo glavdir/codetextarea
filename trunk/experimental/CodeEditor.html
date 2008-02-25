@@ -20,17 +20,31 @@
 
 	    dojo.addOnLoad(start);
 	    function start(){
-	    	dojo.connect(dojo.byId("presshere"), "onclick", go);
+	    	dojo.connect(dojo.byId("viewInner"), "onclick", go);
+	    	dojo.connect(dojo.byId("viewSelection"), "onclick", showSelection);
+	    	dojo.connect(dojo.byId("cloneDocument"), "onclick", cloneDocument);
 	    }
 	    function go(){
-	    	window.alert(dijit.byId("cta").domNode.innerHTML);
+	    	dojo.byId("debugArea").value = dijit.byId("cta").domNode.innerHTML;
+	    }
+	    function showSelection(){
+	    	window.alert(dijit._editor.selection.getSelectedText());
+	    }
+	    function cloneDocument(){
+	    	var _clone = dijit.byId("cta").domNode.cloneNode(true);
+	    	dojo.byId("debugArea").value = _clone.innerHTML;
 	    }
 	</script>	
   </head>
   
   <body class="not">
-<div id="cta" dojoType="dojox.widget.CodeTextArea" plugins="BlinkingCaret GoToLineDialog" colorsUrl="javascript_color.json" autocompleteUrl="javascript_ac.json" height="500" width="1000"></div>
+<div id="cta" dojoType="dojox.widget.CodeTextArea" plugins="BlinkingCaret GoToLineDialog" colorsUrl="javascript_dojo_color.json" autocompleteUrl="javascript_dojo_ac.json" height="500" width="1000"></div>
 <div id="footer"><div id="coords"><div>1:1</div></div></div>
- <input type="button" name="press here" value="Press here" id="presshere"/> 
+
+<input type="button" name="viewInner" value="view innerHTML" id="viewInner"/> 
+<input type="button" name="viewSelection" value="view Selection" id="viewSelection"/> 
+<input type="button" name="cloneDocument" value="cloneDocument" id="cloneDocument"/> 
+
+<textarea id="debugArea" style="width:500px;height:500px"></textarea>
 </body>
 </html>
