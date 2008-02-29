@@ -65,14 +65,8 @@ dojo.declare(
 		// undo vars start
        	_undoStack: [],
        	_undoStackIndex: -1,
-		_undoObject : {
-        	action: "",
-        	target: "",
-        	data: "",
-        	index: 0,
-        	coords: {x:0, y:0}
-        },
-        _lastEditCoords: {x:0,y:0},
+        _lastEditCoords: {x:0, y:0},
+		_pushNextAction: false,
 		// undo vars end
         _symbols: [
         	{"." : "context-separator"},
@@ -116,7 +110,6 @@ dojo.declare(
             this._caret.style.right = "-500px";
             // end this._caret section.
             this.setCaretPosition(0, 0); 
-//            this._undoObject.target = this.currentToken;
             document.body.appendChild(this._caret);    
         },
         _initializeSuggestionsPopup: function(){
@@ -546,18 +539,21 @@ dojo.declare(
 	                    }
 	                    var changes = this.removeCharAtCaret();
 						//nr 18-feb-2008b
-						if(this._undoStack.length && this._undoStack[this._undoStack.length - 1].action != "removeCharBS" 
-						|| _oldX != this._lastEditCoords.x || _oldY != this._lastEditCoords.y){
-							this.pushIntoUndoStack({
-								action: "removeCharBS", 
-								data: changes.data, 
-								coords: {x: this.x, y: this.y},
-								initialCoords: {x: _oldX, y: _oldY}
-							});		
-						}else{
-							// au contraire...
-							this._undoStack[this._undoStack.length - 1].data = changes.data + this._undoStack[this._undoStack.length - 1].data;
-							this._undoStack[this._undoStack.length - 1].coords = {x: this.x, y: this.y};
+						if(changes){
+							if(this._pushNextAction || 
+							!this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "removeCharBS" 
+							|| _oldX != this._lastEditCoords.x || _oldY != this._lastEditCoords.y){
+								this.pushIntoUndoStack({
+									action: "removeCharBS", 
+									data: changes.data, 
+									coords: {x: this.x, y: this.y},
+									initialCoords: {x: _oldX, y: _oldY}
+								});		
+							}else{
+								// au contraire...
+								this._undoStack[this._undoStack.length - 1].data = changes.data + this._undoStack[this._undoStack.length - 1].data;
+								this._undoStack[this._undoStack.length - 1].coords = {x: this.x, y: this.y};
+							}
 						}
 						//nr 18-feb-2008e
          			}else{
@@ -578,16 +574,20 @@ dojo.declare(
          			if(!len){
 	                    var changes = this.removeCharAtCaret();
 						//nr 18-feb-2008b
-						if(this._undoStack.length && this._undoStack[this._undoStack.length - 1].action != "removeCharDel" 
-						|| this.x != this._lastEditCoords.x || this.y != this._lastEditCoords.y){
-							this.pushIntoUndoStack({
-								action: "removeCharDel", 
-								data: changes.data, 
-								coords: {x: this.x, y: this.y}
-							});		
-						}else{
-							// au contraire...
-							this._undoStack[this._undoStack.length - 1].data += changes.data;
+						if(changes){
+							if(this._pushNextAction || 
+							!this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "removeCharDel" 
+							|| this.x != this._lastEditCoords.x || this.y != this._lastEditCoords.y){
+								this.pushIntoUndoStack({
+									action: "removeCharDel", 
+									data: changes.data, 
+									coords: {x: this.x, y: this.y}
+								});		
+							}else{
+								// au contraire...
+								this._undoStack[this._undoStack.length - 1].data += changes.data;
+								console.log("changes.data: " + this._undoStack[this._undoStack.length - 1].data);
+							}
 						}
 						//nr 18-feb-2008e
          			}else{
@@ -718,8 +718,8 @@ dojo.declare(
 				case dk.ENTER:
 		            var _oldX = this.x;
 		            var _oldY = this.y;
-                    var changes = this.splitLineAtCaret();
-					if(this._undoStack.length && this._undoStack[this._undoStack.length - 1].action != "newLine" 
+                    var changes = this.splitLineAtCaret(true);
+					if(this._pushNextAction || !this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "newLine" 
 					|| _oldX != this._lastEditCoords.x || _oldY != this._lastEditCoords.y){
 						this.pushIntoUndoStack({
 							action: "newLine", 
@@ -787,7 +787,6 @@ dojo.declare(
                         // ctrl + z
                         this._specialKeyPressed = true;
                         var _undoStack = this._undoStack;
-                        //if(!this._undoObject.data){ break; }
 						this.undo();
                         return;
                     }
@@ -836,6 +835,7 @@ dojo.declare(
             this._undoStack.length = this._undoStackIndex + 1;
         },
         pushIntoUndoStack: function(/*object literal*/ undoObject){
+			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
           	this._undoStackIndex++;
@@ -846,6 +846,7 @@ dojo.declare(
 				// nothing to (un)do
 				return; 
 			} 
+			this._pushNextAction = true;
 			var undoObject = undoStack[this._undoStackIndex]; // pop! (1)
 			var coords = undoObject.coords;
 			if(undoObject.action == "writeToken"){
@@ -855,14 +856,13 @@ dojo.declare(
 					this.removeCharAtCaret();				
 				}
 			}else if(undoObject.action == "removeCharBS"){
-				var initialCoords = undoObject.initialCoords;
+				//var initialCoords = undoObject.initialCoords;
 				this.setCaretPosition(coords.x, coords.y);
-				this.writeToken(undoObject.data);
-				this.setCaretPosition(initialCoords.x, initialCoords.y);
+				this.write(undoObject.data, true, true);
 			}else if(undoObject.action == "removeCharDel"){
-				var initialCoords = undoObject.initialCoords;
 				this.setCaretPosition(coords.x, coords.y);
-				this.writeToken(undoObject.data);
+				this.write(undoObject.data, true, true);
+				this.setCaretPosition(coords.x, coords.y);
 			}else if(undoObject.action == "newLine"){
 				var initialCoords = undoObject.initialCoords;
 				this.setCaretPosition(initialCoords.x, initialCoords.y);
@@ -908,7 +908,7 @@ dojo.declare(
 				var initialCoords = undoObject.initialCoords;
 				this.setCaretPosition(initialCoords.x, initialCoords.y);
 				for(var i = 0; i < linesToAdd; i++){
-					this.splitLineAtCaret();				
+					this.splitLineAtCaret(true);				
 				}
 			}
         },
@@ -1001,7 +1001,6 @@ dojo.declare(
         removeLine: function(/*line*/ targetLine){
             this.removeFromDOM(targetLine);
             dojo.publish(this.id + "::removeLine", [{rows:1}]);
-			console.debug("REMOVING A LINE");
         },
         mergeLinesAtCaret: function(){
             var _currentLine = this.currentLine;
@@ -1031,7 +1030,7 @@ dojo.declare(
         getLine: function(/*int*/ y){
             return this.linesCollection[y];
         },
-        splitLineAtCaret: function(){
+        splitLineAtCaret: function(/*boolean*/ moveCaret){
             var _previousToken = this.currentToken.previousSibling;
             var _token =  this.currentToken;
             var _tokensToMove = [];
@@ -1058,7 +1057,9 @@ dojo.declare(
             }
             
             // put the caret on the next line
-            this.setCaretPosition(0, this.y+1);
+			if(moveCaret){
+				this.setCaretPosition(0, this.y + 1);
+			}
         },
         // TODO: find a better name for these methods
         moveCaretBy: function(/*int*/ x, /*int*/ y){
@@ -1162,7 +1163,7 @@ dojo.declare(
             this.currentToken = _currentToken;
             return newLine;
         },
-        writeLine: function(/*String*/ text, /*Boolean*/ moveCaret){
+        writeLine: function(/*String*/ text, /*Boolean*/ moveCaret, /*Boolean*/ noUndo){
             if(!text){ return; }
 //            var tokens = text.match(/\S+|\s+/g);            
             //var tokens = text.match(/\.+|[\S+|\s+]/g);            
@@ -1172,13 +1173,16 @@ dojo.declare(
                 var token = tokens[i];
 				if(token){ this.removeRedoHistory(); }
                 var changes = this.writeToken(token);
-				if(!this._undoStack.length 
-					|| changes.typeChange 
-					|| this._undoStack[this._undoStack.length - 1].action != "writeToken" 
-					|| this.x != this._lastEditCoords.x || this.y != this._lastEditCoords.y){
-					this.pushIntoUndoStack({action: "writeToken", data: changes.data, coords: {x: this.x, y: this.y}});		
-				}else{
-					this._undoStack[this._undoStack.length - 1].data += changes.data;
+				if(!noUndo){
+					if(this._pushNextAction ||
+						!this._undoStack.length 
+						|| changes.typeChange 
+						|| this._undoStack[this._undoStack.length - 1].action != "writeToken" 
+						|| this.x != this._lastEditCoords.x || this.y != this._lastEditCoords.y){
+						this.pushIntoUndoStack({action: "writeToken", data: changes.data, coords: {x: this.x, y: this.y}});		
+					}else{
+						this._undoStack[this._undoStack.length - 1].data += changes.data;
+					}
 				}
                 if(moveCaret){ this.moveCaretBy(token.length, 0); }
                 this._lastEditCoords = {x:this.x, y:this.y};
@@ -1195,20 +1199,20 @@ dojo.declare(
             dojo.publish(this.id + "::addNewLine", [{rows:1}]);
             return newLine;
         },
-        write: function(/*String*/ text, /*Boolean*/ moveCaret){
+        write: function(/*String*/ text, /*Boolean*/ moveCaret, /*Boolean*/ noUndo){
             if(!text){ return; }
             var rows = text.split(/\n\r|\r\n|\r|\n/);
             for(var i = 0; i < rows.length; i++){
                 var line;
                 if(i){
-                    this.splitLineAtCaret();
+                    this.splitLineAtCaret(moveCaret);
                 }else{
                     line = this.currentLine;
                 }
                 if(moveCaret){ this.currentLine = line; }
-                this.writeLine(rows[i], moveCaret);
+                this.writeLine(rows[i], moveCaret, noUndo);
             }
-            if(moveCaret){this.setCaretPosition(this.x, this.y);}
+            if(moveCaret){ this.setCaretPosition(this.x, this.y); }
         },
         createLineTerminator: function(){
               var terminatorToken = document.createElement("span");
@@ -1459,13 +1463,14 @@ dojo.declare(
 				_parsedContent += _rowText;
 				// END new solution 09-23-2007
             } // end rows cycle
+            var newContent = _firstFragment + _parsedContent + _lastFragment;
             if(!dojo.isIE){
-            	this.lines.innerHTML = _firstFragment + _parsedContent + _lastFragment;
+            	this.lines.innerHTML = newContent;
             }else{
             	this.lines.innerHTML = "";
             	var container = document.createElement("div");
             	this.lines.appendChild(container);
-            	container.outerHTML = _firstFragment + _parsedContent + _lastFragment;
+            	container.outerHTML = newContent;
             }
 
 			this._addRowNumber({rows:_yIncrement});
@@ -1482,6 +1487,7 @@ dojo.declare(
 			var _xBase = _yIncrement ? 0 : this.x;
 			this.setCaretPosition(_xBase + _xIncrement, this.y + _yIncrement);
 			this.setCurrentTokenAtCaret();
+			return {data: newContent};
         },
         // handles the single token colorization
         colorizeToken: function(/*token*/ currentToken){
