@@ -40,7 +40,17 @@ table.dojoCodeWrapper tr, table.dojoCodeWrapper tr td{
 .dojoCodeTextAreaBand ol li{
 	margin: 0 0 0 30px;
 }
+.dojoCodeTextAreaBand ol li div.bookmarkPlaceholder{
+	font:13px monospace;
+	color:#3c3;
+	background:#3c3;
+	margin-left:-9px;
+	visibility:hidden;
+}
 .codeTextAreaLine{
+	position:relative;
+	top:0;
+	left.0;
 	font:13px monospace;
 }
 .codeTextAreaLine span{
@@ -78,4 +88,13 @@ pre{
 }
 input.suggester{
 	font:13px monospace;
+}
+.autocompleterText{
+	background:red;
+}
+ .codeTextAreaDialogCaption{
+	font:11px helvetica;
+}
+.codeTextAreaDialogTitle{
+	font:13px helvetica;
 }
