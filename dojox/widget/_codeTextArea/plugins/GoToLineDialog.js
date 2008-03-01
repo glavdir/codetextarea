@@ -12,15 +12,16 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
 //                    source._blockedKeyCombinations["CTRL+l"] = true;
                     
                     var _goToLineDialogDomNode = document.createElement("div");
-
                     var _fromTo = document.createElement("div");
 
                     var _fromLine = document.createElement("span");
+					_fromLine.className = "codeTextAreaDialogCaption";
                     _fromLine.innerHTML = "Enter Line Number (1.."; 
                     _fromTo.appendChild(_fromLine);
 
                     var _toLine = document.createElement("span");
                     _toLine.name = "toLine";
+					_toLine.className = "codeTextAreaDialogCaption";
                     _fromTo.appendChild(_toLine);
                     
                     var _line = document.createElement("input");
@@ -38,9 +39,15 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
                             duration: 40
                         }, _goToLineDialogDomNode
                     );
+					dojo.addClass(this._goToLineDialog.titleNode, "codeTextAreaDialogTitle");
                     this._goToLineDialog._toLine = _toLine; // mmm
                     this._goToLineDialog._errors = _errors; // mmm...
-                    dojo.connect(this._goToLineDialog, "hide", dojo.hitch(source, source.attachEvents));
+                    var _self = this;
+                    dojo.connect(this._goToLineDialog, "hide", function(){
+						_self._goToLineDialog.domNode.getElementsByTagName("input")[0].blur();  
+						source._blockedEvents = false;
+			            document.body.focus();
+					});
                     var _dialog = this._goToLineDialog; 
                     dojo.connect(_dialog, "show", function(){
                             _dialog._toLine.innerHTML = source.numLines() + ")";
@@ -68,14 +75,14 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
                                     _errors.style.display = "none";
                                     source.setCaretPosition(0, 
                                         _value - 1);
+									_dialog.domNode.getElementsByTagName("input")[0].blur();  
                                     _dialog.hide();
                                     dojo.stopEvent(evt);
                                 }
                             }
-//                            if(!(/\d/.test(String.fromCharCode(evt.charCode)))){ dojo.stopEvent(evt); }
                     });
                 }
-                source.detachEvents();
+				source._blockedEvents = true;
                 this._goToLineDialog._errors.style.display = "none";
                 this._goToLineDialog.show();            
             }
