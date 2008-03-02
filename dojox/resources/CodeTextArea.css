@@ -98,3 +98,17 @@ input.suggester{
 .codeTextAreaDialogTitle{
 	font:13px helvetica;
 }
+.codeTextAreaBookmarksBar{
+	background:#ccc;
+	position:absolute;
+	width: 12px;
+}
+.codeTextAreaBookmarksBar .codeTextAreaBookmark{
+	position:absolute;
+	font:1px monospace;
+	color:#3c3;
+	background:#3c3;
+	border:1px solid #090;
+	height:3px;
+	width:10px;
+}
