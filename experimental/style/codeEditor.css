@@ -6,6 +6,7 @@
 	height:26px;
 	background:#ddd;
 	border-top:1px solid #999;
+	z-index:20;
 }
 #footer #coords{
 	position:absolute;
