@@ -67,7 +67,6 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
                                 if(isNaN(_value)){
                                     _errors.innerHTML = "not a number";
                                     _errors.style.display = "block";
-                                    console.debug("not a number");
                                 }else if(_value < 1 || _value > source.numLines()){
                                     _errors.innerHTML = "out of range";
                                     _errors.style.display = "block";
