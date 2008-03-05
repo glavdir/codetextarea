@@ -5,18 +5,20 @@ dojo.require("dijit.Dialog");
 dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	var targetLine = 0;
 	var targetBookmark = {};
+	var bookmarks = [];
+	
     var source = args.source;
-	var areaId = source.id;
-	var area = dijit.byId(areaId);
-	var areaCoords = dojo.coords(area.domNode);
-	var lineHeight = area.lineHeight;
+	var areaCoords = dojo.coords(source.domNode);
+	var lineHeight = source.lineHeight;
 
 	// right bar
 	var bookmarksBar = document.createElement("div");
 	bookmarksBar.className = "codeTextAreaBookmarksBar";
-	bookmarksBar.style.top = areaCoords.y + "px";
-	bookmarksBar.style.left = areaCoords.x + area.width + "px";
-	bookmarksBar.style.height = area.height + "px";
+	with(bookmarksBar.style){
+		top = areaCoords.y + "px";
+		left = areaCoords.x + source.width + "px";
+		height = source.height + "px";
+	}
 	document.body.appendChild(bookmarksBar);
 
 	// dialog
@@ -45,39 +47,81 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
             _bookmarkField.focus();  
             _bookmarkField.select();  
     });
-	area.showBookmarkDialog = function(index){
+
+	var showBookmarkDialog = function(index){
 		source._blockedEvents = true;
 		_bookmarkField.value = source.getLineContent(source.linesCollection[index]);
 		bookmarkDialog.show();
 	};
-	area.enableBookmark = function(index){
-		var targetBookmark = dojo.query("div.bookmarkPlaceholder", area.leftBand.getElementsByTagName("li")[index])[0];
-		var bookmark = document.createElement("div");
-		bookmark.className = "codeTextAreaBookmark";
-		bookmark.style.left = "0px";
-		bookmark.style.top = parseInt((index / area.linesCollection.length)*area.height) + "px";
-		bookmarksBar.appendChild(bookmark);
-		targetBookmark.title = _bookmarkField.value;
-		bookmark.title = _bookmarkField.value;
-		targetBookmark.style.visibility = "visible";
+
+	var normalizePosition = function(params){
+		var signum = params.signum;
+		for(var i = 0; i < bookmarks.length; i++){
+			var placeholder = bookmarks[i].placeholder;
+			if(bookmarks[i].index > params.position && bookmarks[i].index < params.position + params.rows && signum == -1){
+				// remove a placeholder
+				source.removeFromDOM(bookmarks.placeholder);
+				bookmarks.splice(i, 1);
+			}
+			if(params.position <= bookmarks[i].index + 1){
+				bookmarks[i].index += (signum*params.rows);
+				//placeholder.title = bookmarks[i].index;
+			}
+			bookmarks[i].bookmark.style.top = bookmarks[i].index*lineHeight + "px";
+			placeholder.style.top = parseInt((bookmarks[i].index / source.linesCollection.length)*source.height) + "px";
+		}
 	};
+	var gotoBookmark = function(oBookmark){
+		source.setCaretPosition(0, oBookmark.index);
+	};
+	var enableBookmark = function(index){
+		//var bookmark = dojo.query("div.bookmarkPlaceholder", source.leftBand.getElementsByTagName("li")[index])[0];
+		var bookmark = document.createElement("div");
+		bookmark.className = "bookmark";
+		bookmark.appendChild(document.createTextNode("B"));
+		bookmark.style.top = index*lineHeight + "px";
+		source.leftBand.appendChild(bookmark);
+		var placeholder = document.createElement("div");
+		placeholder.className = "placeholder";
+		placeholder.style.left = "0px";
+		var oBookmark = {
+			index: index,
+			placeholder: placeholder,
+			bookmark: bookmark
+		};
+		dojo.connect(placeholder, "onclick", function(e){ gotoBookmark(oBookmark) });
+		placeholder.style.top = parseInt((index / source.linesCollection.length)*source.height) + "px";
+		bookmarksBar.appendChild(placeholder);
+		bookmark.title = _bookmarkField.value;
+		placeholder.title = _bookmarkField.value;
+		bookmark.style.visibility = "visible";
+		
+		bookmarks.push(oBookmark);
+	};
+
+	dojo.subscribe(source.id + "::addNewLine", normalizePosition);
+	dojo.subscribe(source.id + "::removeLine", normalizePosition);
+
     dojo.connect(_bookmarkField, "onkeypress", function(evt){
             var evt = dojo.fixEvent(evt||window.event);
 			var _value;            
             if(evt.keyCode == 13){
-				source.enableBookmark(targetLine);
+				enableBookmark(targetLine);
                 bookmarkDialog.hide();
                 dojo.stopEvent(evt);
 	            document.body.focus();
             }
     });
 	var addBookmark = function(e){
-		area.showBookmarkDialog(targetLine);
+		if(targetLine >= source.linesCollection.length){
+			return;
+		}
+		showBookmarkDialog(targetLine);
 	};
 	var onMenuOpen = function(e){
 		targetLine = parseInt((e.y - areaCoords.y) / lineHeight);
 	};
-	var leftBandMenu = new dijit.Menu({targetNodeIds: [area.leftBand.id], id:[area.leftBand.id] + "-menu"});
+	var leftBandMenu = new dijit.Menu({targetNodeIds: [source.leftBand.id], id:[source.leftBand.id] + "-menu"});
 	leftBandMenu.addChild(new dijit.MenuItem({
 			label: "Add a bookmark", 
 			onClick: function(e){ addBookmark(e); } 

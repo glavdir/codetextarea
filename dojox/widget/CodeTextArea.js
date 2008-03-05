@@ -91,7 +91,7 @@ dojo.declare(
             this._initializeClipboard();
             this._initializeSuggestionsPopup();
             this._initializeRange();
-			this._addRowNumber({startRow: 0, rows:100});
+			this._addRowNumber({position: 1, rows:10});
 			var _self = this;
 	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, _self._addRowNumber));
 	    	dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, _self._removeRowNumber));
@@ -224,7 +224,6 @@ dojo.declare(
         },
         getLineLength: function(/*int*/ y){
             var line = this.linesCollection[y];
-			//text length - terminator length (1) - bookmark placeholder length (1) == text length - 2
             return line ? this.getLineContent(line).length-1 : 0;  
         },
 		getLineContent: function(line){
@@ -1010,7 +1009,7 @@ dojo.declare(
         },
         removeLine: function(/*line*/ targetLine, /*integer*/ y){
             this.removeFromDOM(targetLine);
-            dojo.publish(this.id + "::removeLine", [{rows:1, rowIndex:y}]);
+            dojo.publish(this.id + "::removeLine", [{rows:1, position:y, signum:-1}]);
         },
         mergeLinesAtCaret: function(){
             var _currentLine = this.currentLine;
@@ -1162,9 +1161,6 @@ dojo.declare(
             var x = Math.min(parseInt(Math.max(0, evt.layerX) / this._caretWidth), this.getLineLength(y));
             this.setCaretPosition(x, y);
         },
-		createBookmarkPlaceHolder: function(){
-			return
-		},
         createLine: function(){
             var newLine = document.createElement("pre");
             newLine.className = "codeTextAreaLine";             
@@ -1203,12 +1199,15 @@ dojo.declare(
         addNewLine: function(/*string*/ position){
             var lines = this.linesCollection;
             var newLine = this.createLine();
+			var insertionPoint = 0;
             if(position=="end"){
                 this.lines.appendChild(newLine);
+				insertionPoint = this.lines.length + 1;
             }else{
                 dojo.place(newLine, lines[this.y], "after");
+				insertionPoint = this.y + 1;
             }
-            dojo.publish(this.id + "::addNewLine", [{rows:1}]);
+            dojo.publish(this.id + "::addNewLine", [{rows:1, position:insertionPoint, signum:1}]);
             return newLine;
         },
         write: function(/*String*/ text, /*Boolean*/ moveCaret, /*Boolean*/ noUndo){
@@ -1483,7 +1482,7 @@ dojo.declare(
             	container.outerHTML = newContent;
             }
 
-			this._addRowNumber({startRow: _insertionPoint, rows:_yIncrement});
+			this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
             for(var i = 0; i < _delimiters.length; i++){
             	var _currentDelimiter = _delimiters[i];
@@ -1644,7 +1643,7 @@ dojo.declare(
         },
         _removeRowNumber: function(/*integer*/ rowsToRemove){
 			var root = this.leftBand.getElementsByTagName("ol")[0];
-			this.removeFromDOM(root.getElementsByTagName("li")[rowsToRemove.rowIndex + 1]);
+			this.removeFromDOM(root.getElementsByTagName("li")[rowsToRemove.position + 1]);
 		},
         _addRowNumber: function(/*integer*/ rowsToAdd){
 			var root = this.leftBand.getElementsByTagName("ol")[0];
@@ -1653,14 +1652,16 @@ dojo.declare(
         	var _endCount = rowsToAdd.rows + _offset;
         	for(var i = _offset; i < _endCount; i++){
         		//_rows += "<div>"+i+"</div>";
-        		_rows += "<li><div class='bookmarkPlaceholder'>B</div></li>";
+        		//_rows += "<li><div class='bookmarkPlaceholder'>B</div></li>";
+        		_rows += "<li></li>";
         	}
-			var insertionPoint = rowsToAdd.startRow || 0;
+			var insertionPoint = rowsToAdd.position || 1;
 			var placeholder = document.createElement("ul");
+			
 			dojo.place(
 				placeholder, 
-				root.getElementsByTagName("li")[insertionPoint],
-				"after"
+				root.getElementsByTagName("li")[insertionPoint - 1],
+				this.x ? "after" : "before"
 			);
         	var _content = root.innerHTML;
 			var _index;
@@ -1671,7 +1672,6 @@ dojo.declare(
 			var _firstFragment = _content.substring(0, _index - 4);
 			var _lastFragment = _content.substring(_index + 5);		
 			this.removeFromDOM(placeholder);	
-
         	root.innerHTML = _firstFragment + _rows + _lastFragment;
         }
 	}

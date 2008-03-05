@@ -32,6 +32,7 @@ table.dojoCodeWrapper tr, table.dojoCodeWrapper tr td{
 	border-right:1px solid #ddd;
 	width:70px;
 	text-align:right;
+	position:relative;
 }
 .dojoCodeTextAreaBand ol{
 	list-style-type:decimal;
@@ -40,12 +41,12 @@ table.dojoCodeWrapper tr, table.dojoCodeWrapper tr td{
 .dojoCodeTextAreaBand ol li{
 	margin: 0 0 0 30px;
 }
-.dojoCodeTextAreaBand ol li div.bookmarkPlaceholder{
+.dojoCodeTextAreaBand div.bookmark{
+	position:absolute;
 	font:13px monospace;
 	color:#3c3;
 	background:#3c3;
-	margin-left:-9px;
-	visibility:hidden;
+	right:0;
 }
 .codeTextAreaLine{
 	position:relative;
@@ -103,7 +104,7 @@ input.suggester{
 	position:absolute;
 	width: 12px;
 }
-.codeTextAreaBookmarksBar .codeTextAreaBookmark{
+.codeTextAreaBookmarksBar .placeholder{
 	position:absolute;
 	font:1px monospace;
 	color:#3c3;
@@ -112,4 +113,5 @@ input.suggester{
 	height:3px;
 	width:10px;
 	z-index:10;
+	cursor:pointer;
 }
