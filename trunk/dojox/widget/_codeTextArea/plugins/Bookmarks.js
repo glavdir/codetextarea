@@ -60,12 +60,11 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 			var placeholder = bookmarks[i].placeholder;
 			if(bookmarks[i].index > params.position && bookmarks[i].index < params.position + params.rows && signum == -1){
 				// remove a placeholder
-				source.removeFromDOM(bookmarks.placeholder);
-				bookmarks.splice(i, 1);
+				//source.removeFromDOM(bookmarks.placeholder);
+				//bookmarks.splice(i, 1);
 			}
-			if(params.position <= bookmarks[i].index + 1){
+			if(params.position <= bookmarks[i].index || (params.position == bookmarks[i].index + 1 && source.x == 0)){
 				bookmarks[i].index += (signum*params.rows);
-				//placeholder.title = bookmarks[i].index;
 			}
 			bookmarks[i].bookmark.style.top = bookmarks[i].index*lineHeight + "px";
 			placeholder.style.top = parseInt((bookmarks[i].index / source.linesCollection.length)*source.height) + "px";
@@ -75,7 +74,6 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 		source.setCaretPosition(0, oBookmark.index);
 	};
 	var enableBookmark = function(index){
-		//var bookmark = dojo.query("div.bookmarkPlaceholder", source.leftBand.getElementsByTagName("li")[index])[0];
 		var bookmark = document.createElement("div");
 		bookmark.className = "bookmark";
 		bookmark.appendChild(document.createTextNode("B"));
