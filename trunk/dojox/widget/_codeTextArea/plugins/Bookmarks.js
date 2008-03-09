@@ -10,6 +10,8 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
     var source = args.source;
 	var areaCoords = dojo.coords(source.domNode);
 	var lineHeight = source.lineHeight;
+	
+	var _action = "add";
 
 	// right bar
 	var bookmarksBar = document.createElement("div");
@@ -51,6 +53,7 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	var showBookmarkDialog = function(index){
 		source._blockedEvents = true;
 		_bookmarkField.value = source.getLineContent(source.linesCollection[index]);
+		_action = "add";
 		bookmarkDialog.show();
 	};
 
@@ -58,11 +61,6 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 		var signum = params.signum;
 		for(var i = 0; i < bookmarks.length; i++){
 			var placeholder = bookmarks[i].placeholder;
-			if(bookmarks[i].index > params.position && bookmarks[i].index < params.position + params.rows && signum == -1){
-				// remove a placeholder
-				//source.removeFromDOM(bookmarks.placeholder);
-				//bookmarks.splice(i, 1);
-			}
 			if(params.position <= bookmarks[i].index || (params.position == bookmarks[i].index + 1 && source.x == 0)){
 				bookmarks[i].index += (signum*params.rows);
 			}
@@ -101,30 +99,70 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	dojo.subscribe(source.id + "::removeLine", normalizePosition);
 
     dojo.connect(_bookmarkField, "onkeypress", function(evt){
-            var evt = dojo.fixEvent(evt||window.event);
-			var _value;            
-            if(evt.keyCode == 13){
-				enableBookmark(targetLine);
-                bookmarkDialog.hide();
-                dojo.stopEvent(evt);
-	            document.body.focus();
-            }
+        var evt = dojo.fixEvent(evt||window.event);
+		var _value;            
+        if(evt.keyCode == dojo.keys.ENTER){
+			if(_action != "add"){ return; }
+			enableBookmark(targetLine);
+            bookmarkDialog.hide();
+            dojo.stopEvent(evt);
+            document.body.focus();
+        }
     });
+	var hasBookmark = function(index){
+		var _hasBookmark = false;
+		for(var i = 0; i < bookmarks.length; i++){
+			if(index == bookmarks[i].index){
+				_hasBookmark = true;
+				break;
+			}
+		}
+		return _hasBookmark;
+	};
 	var addBookmark = function(e){
 		if(targetLine >= source.linesCollection.length){
 			return;
 		}
 		showBookmarkDialog(targetLine);
 	};
+
+	var removeBookmark = function(index){
+		for(var i = 0; i < bookmarks.length; i++){
+			var bookmark = bookmarks[i];
+			if(index == bookmark.index){
+				source.removeFromDOM(bookmark.placeholder);
+				source.removeFromDOM(bookmark.bookmark);
+				bookmarks.splice(i, 1);
+				delete bookmark.placeholder;
+				delete bookmark.bookmark;
+				delete bookmark.index;
+				bookmark = null;
+				break;
+			}
+		}
+		_action = "remove";
+	};
+
+	var leftBandMenu = new dijit.Menu({targetNodeIds: [source.leftBand.id], id:[source.leftBand.id] + "-menu"});
+
 	var onMenuOpen = function(e){
 		targetLine = parseInt((e.y - areaCoords.y) / lineHeight);
+		leftBandMenu.destroyDescendants();
+		var menuItem;
+		if(!hasBookmark(targetLine)){
+			menuItem = new dijit.MenuItem({
+				label: "Add bookmark", 
+				onClick: function(e){ addBookmark(e); } 
+			});
+		}else{
+			menuItem = new dijit.MenuItem({
+				label: "Remove bookmark", 
+				onClick: function(e){ removeBookmark(targetLine); } 
+			});
+		}
+		leftBandMenu.addChild(menuItem);
 	};
-	var leftBandMenu = new dijit.Menu({targetNodeIds: [source.leftBand.id], id:[source.leftBand.id] + "-menu"});
-	leftBandMenu.addChild(new dijit.MenuItem({
-			label: "Add a bookmark", 
-			onClick: function(e){ addBookmark(e); } 
-		})
-	);
+	
 	dojo.connect(leftBandMenu, "onOpen", this, function(e){ onMenuOpen(e); });
 	leftBandMenu.startup();
 };
