@@ -23,10 +23,16 @@
 	    	dojo.connect(dojo.byId("viewInner"), "onclick", go);
 	    	dojo.connect(dojo.byId("viewSelection"), "onclick", showSelection);
 	    	dojo.connect(dojo.byId("cloneDocument"), "onclick", cloneDocument);
+	    	dojo.connect(dojo.byId("viewInnerText"), "onclick", viewInnerText);
+			
 	    }
 	    function go(){
 	    	dojo.byId("debugArea").value = dijit.byId("cta").domNode.innerHTML;
 	    }
+		function viewInnerText(){
+			var content = dijit.byId("cta").getContent();
+			dojo.byId("debugArea").value = content;
+		}
 	    function showSelection(){
 	    	window.alert(dijit._editor.selection.getSelectedText());
 	    }
@@ -42,6 +48,7 @@
 <div id="footer"><div id="coords"><div>1:1</div></div></div>
 
 <input type="button" name="viewInner" value="view innerHTML" id="viewInner"/> 
+<input type="button" name="viewInnerText" value="view inner text" id="viewInnerText"/> 
 <input type="button" name="viewSelection" value="view Selection" id="viewSelection"/> 
 <input type="button" name="cloneDocument" value="cloneDocument" id="cloneDocument"/> 
 
