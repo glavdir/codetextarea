@@ -921,6 +921,9 @@ dojo.declare(
 				}
 			}
         },
+		getContent: function(){
+			return this.lines.innerText || this.lines.textContent || '';
+		},
         getSelectionStartToken: function(){
         	return this._range.startContainer.parentNode;
         },
