@@ -159,7 +159,7 @@ dojo.declare(
             this._clipboard.style.width = "0";
             this._clipboard.style.height = "0";
             document.body.appendChild(this._clipboard);
-            console.debug("clipboard initialized");
+            console.log("clipboard initialized");
         },
         blur: function(){
             // to solve IE scroll problem; find another solution
@@ -236,10 +236,22 @@ dojo.declare(
             var cmd = this.commands;
             switch (command){
                 case cmd.PASTE:
-//                    this.paste(this._clipboard.value);
-//                    this.writeFast();
 					this.detachEvents();
-                    this.massiveWrite(this._clipboard.value);
+					var startToken = this.currentToken;
+					var startIndex = this.caretIndex;
+                    var changes = this.massiveWrite(this._clipboard.value);
+					if(changes){ 
+						this.removeRedoHistory(); 
+						if(this._pushNextAction ||
+							!this._undoStack.length 
+							|| this._undoStack[this._undoStack.length - 1].action != "massiveWrite" 
+							|| this.x != this._lastEditCoords.x || this.y != this._lastEditCoords.y){
+							this.pushIntoUndoStack({action: "massiveWrite", data: changes.data, startCoords: changes.startCoords, endCoords: {x: this.x, y: this.y}});		
+						}else{
+							this._undoStack[this._undoStack.length - 1].data += changes.data;
+						}
+	                	this._lastEditCoords = {x:this.x, y:this.y};
+					}
                     this.attachEvents();
                 break;
                 case cmd.SELECTALL:
@@ -288,11 +300,7 @@ dojo.declare(
         	
         },
         _initializeRange: function(){
-//            this._range = document.createRange ? document.createRange() : null;
-//dojo.body().createControlRange() for IE?
-            //this._range = dojo.doc.createRange ? dojo.doc.createRange() : dijit.range.create();
             this._range = dijit.range.create();
-            console.debug("range created");
         },
         getSelection: function(){
         	return dijit._editor.selection;
@@ -349,6 +357,7 @@ dojo.declare(
 			}
         },
         addToSelection: function(/*Object literal*/ kwPar){
+			console.debug("[addToSelection]");
 			// kwPar: oldToken, oldIndex
 			var oldToken = kwPar.token;
 			var oldIndex = kwPar.index;
@@ -458,7 +467,6 @@ dojo.declare(
 						currentToken = nextToken;
 					}while(nextToken && nextToken !== endToken); 
 				}
-				//was }while(nextToken && currentToken !== endToken);
 				// startLine end
 
 				// middle lines begin
@@ -556,7 +564,7 @@ dojo.declare(
 									action: "removeCharBS", 
 									data: changes.data, 
 									coords: {x: this.x, y: this.y},
-									initialCoords: {x: _oldX, y: _oldY}
+									startCoords: {x: _oldX, y: _oldY}
 								});		
 							}else{
 								// au contraire...
@@ -734,7 +742,7 @@ dojo.declare(
 							action: "newLine", 
 							data: 1, 
 							coords: {x: this.x, y: this.y}, // remove coords, not used
-							initialCoords: {x: _oldX, y: _oldY}
+							startCoords: {x: _oldX, y: _oldY}
 						});		
 					}else{
 						this._undoStack[this._undoStack.length - 1].data++;
@@ -844,6 +852,7 @@ dojo.declare(
             this._undoStack.length = this._undoStackIndex + 1;
         },
         pushIntoUndoStack: function(/*object literal*/ undoObject){
+			console.log("[pushIntoUndoStack] data: " + undoObject.data);
 			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
@@ -857,6 +866,7 @@ dojo.declare(
 			} 
 			this._pushNextAction = true;
 			var undoObject = undoStack[this._undoStackIndex]; // pop! (1)
+			var action = undoObject.action;
 			var coords = undoObject.coords;
 			if(undoObject.action == "writeToken"){
 				var charsToRemove = undoObject.data.length;
@@ -864,21 +874,31 @@ dojo.declare(
 				for(var i = 0; i < charsToRemove; i++){
 					this.removeCharAtCaret();				
 				}
-			}else if(undoObject.action == "removeCharBS"){
-				//var initialCoords = undoObject.initialCoords;
+			}else if(action == "removeCharBS"){
+				//var startCoords = undoObject.startCoords;
 				this.setCaretPosition(coords.x, coords.y);
 				this.write(undoObject.data, true, true);
-			}else if(undoObject.action == "removeCharDel"){
+			}else if(action == "removeCharDel"){
 				this.setCaretPosition(coords.x, coords.y);
 				this.write(undoObject.data, true, true);
 				this.setCaretPosition(coords.x, coords.y);
-			}else if(undoObject.action == "newLine"){
-				var initialCoords = undoObject.initialCoords;
-				this.setCaretPosition(initialCoords.x, initialCoords.y);
+			}else if(action == "newLine"){
+				var startCoords = undoObject.startCoords;
+				this.setCaretPosition(startCoords.x, startCoords.y);
 				var charsToRemove = undoObject.data;
 				for(var i = 0; i < charsToRemove; i++){
 					this.removeCharAtCaret(undoObject.data);
 				}
+			}else if(action == "massiveWrite"){
+				this.clearSelection();
+				var startCoords = undoObject.startCoords;
+				var endCoords = undoObject.endCoords;
+				this.setCaretPosition(startCoords.x, startCoords.y);
+				var startToken = this.currentToken;
+				var index = this.caretIndex;
+				this.setCaretPosition(endCoords.x, endCoords.y);
+				this.addToSelection({token: startToken, index: index});
+				this.removeSelection();
 			}
 			if(undoStack.length){
 				this._undoStackIndex--; // pop! (2)
@@ -893,32 +913,34 @@ dojo.declare(
 			this._undoStackIndex++;
 			var undoObject = undoStack[this._undoStackIndex];
 			var coords = undoObject.coords;
-			if(undoObject.action == "writeToken"){
+			var action = undoObject.action;
+			if(action == "writeToken"){
 				this.setCaretPosition(coords.x, coords.y);
 				this.writeToken(undoObject.data);
 				this.moveCaretBy(undoObject.data.length, 0);
-			}else if(undoObject.action == "removeCharBS"){
-				// from here, nicola!
+			}else if(action == "removeCharBS"){
 				var charsToRemove = undoObject.data.length;
 				this.setCaretPosition(coords.x, coords.y);
 				for(var i = 0; i < charsToRemove; i++){
 					this.removeCharAtCaret();				
 				}
-			}else if(undoObject.action == "removeCharDel"){
-				// from here, nicola!
+			}else if(action == "removeCharDel"){
 				var charsToRemove = undoObject.data.length;
 				this.setCaretPosition(coords.x, coords.y);
 				for(var i = 0; i < charsToRemove; i++){
 					this.removeCharAtCaret();				
 				}
-			}else if(undoObject.action == "newLine"){
-				// from here, nicola!
+			}else if(action == "newLine"){
 				var linesToAdd = undoObject.data;
-				var initialCoords = undoObject.initialCoords;
-				this.setCaretPosition(initialCoords.x, initialCoords.y);
+				var startCoords = undoObject.startCoords;
+				this.setCaretPosition(startCoords.x, startCoords.y);
 				for(var i = 0; i < linesToAdd; i++){
 					this.splitLineAtCaret(true);				
 				}
+			}else if(action == "massiveWrite"){
+				var startCoords = undoObject.startCoords;
+				this.setCaretPosition(startCoords.x, startCoords.y);
+				this.massiveWrite(undoObject.data);
 			}
         },
 		getContent: function(){
@@ -1182,9 +1204,9 @@ dojo.declare(
             var len = tokens.length;
             for(var i = 0; i < len; i++){
                 var token = tokens[i];
-				if(token){ this.removeRedoHistory(); }
                 var changes = this.writeToken(token);
 				if(!noUndo){
+					if(token){ this.removeRedoHistory(); }
 					if(this._pushNextAction ||
 						!this._undoStack.length 
 						|| changes.typeChange 
@@ -1385,19 +1407,14 @@ dojo.declare(
             var _savedCurrentToken = this.currentToken;
             var _savedPreviousToken = this.previousToken;
             this.substCaretPosition();
+			var startCoords = { x: this.x, y: this.y };
             var _initialContent = this.lines.innerHTML;
-
             var _index = this._getTextDelimiter(_initialContent);
-
             var _firstFragment = _initialContent.substring(0, _index);
-			
             var _lastFragment = _initialContent.substring(_index);
-
             var _parsedContent = "";
             var rows = content.split(/\n\r|\r\n|\r|\n/);
-			
 			_yIncrement = rows.length - 1;
-			
             var tokens = [];            
 			var cDict = this.colorsDictionary;
             for(var i = 0; i < rows.length; i++){
@@ -1451,7 +1468,8 @@ dojo.declare(
 							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _previousType + "\">" + _workingToken + "</span>";
 							if(i == rows.length - 1){
-								_xIncrement += _unparsedToken.length;
+								// 									 - 1: ignore the line-terminator
+								_xIncrement += _unparsedToken.length - 1;
 							}
 						}
 						// nr 06-jan-2008b
@@ -1499,13 +1517,13 @@ dojo.declare(
 			var _xBase = _yIncrement ? 0 : this.x;
 			this.setCaretPosition(_xBase + _xIncrement, this.y + _yIncrement);
 			this.setCurrentTokenAtCaret();
-			return {data: newContent};
+			if(!content){ return "" }
+			return {data: content, startCoords: startCoords};
         },
         // handles the single token colorization
         colorizeToken: function(/*token*/ currentToken){
             var previousToken = currentToken.previousSibling;
             var cDict = this.colorsDictionary;
-
             if(previousToken){
                 previousToken.className = previousToken.firstChild.data in cDict ? cDict[previousToken.firstChild.data].className : "";
                 var ppreviousToken = previousToken.previousSibling;
@@ -1516,23 +1534,18 @@ dojo.declare(
             currentToken.className = currentToken.firstChild.data in cDict ? cDict[currentToken.firstChild.data].className : "";
         },
         showSuggestions: function(){
-
             var _currentContext = this.getCurrentContext();
             var _contextLength = _currentContext.length;       
             var _suggestions = this.autocompleteDictionary;
-
             var i = 0;
             while(i < _contextLength && _suggestions.children){
                 _suggestions = _suggestions.children[_currentContext[i]];
                 i++;
             }
-            
             if(i < _contextLength || !_suggestions){ this._preventLoops = true; this.attachEvents(); return; } // IE loops! :O
-
             // display suggestions
             var _items = _suggestions.children; 
             if(!_items){ this._preventLoops = true; this.attachEvents(); return; }
-
             this.createPopup(_items);
         },
         createPopup: function(/* object literal */ items){
