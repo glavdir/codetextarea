@@ -72,6 +72,7 @@ dojo.declare(
         _symbols: [
         	{"." : "context-separator"},
         	{" " : "separator"},
+        	{"    " : "separator"},
         	{"(" : "parenthesis"},
         	{")" : "parenthesis"},
         	{"[" : "parenthesis"},
@@ -852,7 +853,6 @@ dojo.declare(
             this._undoStack.length = this._undoStackIndex + 1;
         },
         pushIntoUndoStack: function(/*object literal*/ undoObject){
-			console.log("[pushIntoUndoStack] data: " + undoObject.data);
 			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
@@ -1403,7 +1403,6 @@ dojo.declare(
         massiveWrite: function(content){
             // find the caret position
             var _yIncrement = 0;
-            var _xIncrement = 0;
             var _savedCurrentToken = this.currentToken;
             var _savedPreviousToken = this.previousToken;
             this.substCaretPosition();
@@ -1452,6 +1451,8 @@ dojo.declare(
 					
 					if(_currentChar == " "){
 						_currentChar = "&nbsp;";
+					}else if(_currentChar == "    "){ // find a better way to do this
+						_currentChar = "&nbsp;&nbsp;&nbsp;&nbsp;";
 					}
 					
 					// type controls
@@ -1467,16 +1468,11 @@ dojo.declare(
 						if(_previousType){
 							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _previousType + "\">" + _workingToken + "</span>";
-							if(i == rows.length - 1){
-								// 									 - 1: ignore the line-terminator
-								_xIncrement += _unparsedToken.length - 1;
-							}
 						}
 						// nr 06-jan-2008b
 						if(k == row.length - 1 && _currentType !== _previousType){
 							var _class = (_currentChar in cDict) ? cDict[_currentChar].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _currentType + "\">" + _currentChar + "</span>";
-							_xIncrement += _unparsedToken.length;
 						}
 						// nr 06-jan-2008e
 						_workingToken = _currentChar;
@@ -1505,17 +1501,12 @@ dojo.declare(
 
 			this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
-            for(var i = 0; i < _delimiters.length; i++){
-            	var _currentDelimiter = _delimiters[i];
-            	if(_currentDelimiter.previousSibling && _currentDelimiter.nextSibling && _currentDelimiter.nextSibling.getAttribute("tokenType") != "line-terminator"){
-            		this.mergeSimilarTokens(_currentDelimiter.nextSibling, _currentDelimiter.previousSibling, true);
-            	}
-				this.removeFromDOM(_delimiters[i]);
-            }
+
+			this._removeDelimiter(_delimiters[0]);
+			this.moveCaretAtToken(_delimiters[1], 0);
+			this._removeDelimiter(_delimiters[1]);
+
 			this.currentToken = _savedCurrentToken;
-			// error: in the following line this.x is wrong!
-			var _xBase = _yIncrement ? 0 : this.x;
-			this.setCaretPosition(_xBase + _xIncrement, this.y + _yIncrement);
 			this.setCurrentTokenAtCaret();
 			if(!content){ return "" }
 			return {data: content, startCoords: startCoords};
@@ -1631,6 +1622,12 @@ dojo.declare(
             }
         },
         /* private functions */
+		_removeDelimiter: function(/*token*/ delimiter){
+        	if(delimiter.previousSibling && delimiter.nextSibling && delimiter.nextSibling.getAttribute("tokenType") != "line-terminator"){
+        		this.mergeSimilarTokens(delimiter.nextSibling, delimiter.previousSibling, true);
+        	}
+			this.removeFromDOM(delimiter);
+		},
         _getTargetToken: function(/*token*/ startToken){
             /* REFACTOR THIS METHOD!! */
             var _previousToken = startToken.previousSibling;
