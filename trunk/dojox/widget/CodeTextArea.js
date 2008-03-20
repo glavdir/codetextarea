@@ -84,7 +84,7 @@ dojo.declare(
 			this.leftBand.id = this.id + "leftBand";
             this.loadDictionary(this.autocompleteUrl, dojo.hitch(this, this._autocompleteFiller));
             this.loadDictionary(this.colorsUrl, dojo.hitch(this, this._colorsFiller));
-            this.linesCollection = this.lines.getElementsByTagName("pre");
+            this.linesCollection = this.lines.getElementsByTagName("div");
             this.setDimensions();
             this.loadPlugins();
             this._initializeInternals();
@@ -327,6 +327,12 @@ dojo.declare(
 				}
 			}
         },
+		getTokenPosition: function(token, index){
+			index = index || 0;
+			var x = this.getTokenX(token) + index;
+			var y = this.indexOf(token.parentNode);
+			return {x: x, y: y};
+		},
         compareTokenPosition: function(/*token*/ fromToken, /*token*/ toToken){
         	// returns:
         	//  0: same token and position
@@ -358,7 +364,6 @@ dojo.declare(
 			}
         },
         addToSelection: function(/*Object literal*/ kwPar){
-			console.debug("[addToSelection]");
 			// kwPar: oldToken, oldIndex
 			var oldToken = kwPar.token;
 			var oldIndex = kwPar.index;
@@ -435,13 +440,13 @@ dojo.declare(
         	this.setCaretPosition(this.getTokenX(token) + targetOffset, y);
         },
         removeSelection: function(){
-			// 
 			if(dojo.doc["selection"]){
 				var _sel = dijit.range.getSelection(window);
 				this._range = _sel.getRangeAt(0);
 			}else{
 				this._range = dojo.global.getSelection().getRangeAt(0); // FF only
 			}
+			var selectedText = this.getSelectedText();
 			var startToken = this._range.startContainer.parentNode;
 			var endToken = this._range.endContainer.parentNode;
 			var startOffset = this._range.startOffset;
@@ -516,6 +521,7 @@ dojo.declare(
             	this.mergeSimilarTokens(this.previousToken, this.currentToken);
             }
             this.colorizeToken(this.currentToken);
+			return {data:selectedText}
         },
         keyPressHandler: function(evt){
 			if(this._blockedEvents) { return; }
@@ -556,7 +562,6 @@ dojo.declare(
 	                       this.setCaretPosition(this.getLineLength(y-1), y-1);
 	                    }
 	                    var changes = this.removeCharAtCaret();
-						//nr 18-feb-2008b
 						if(changes){
 							if(this._pushNextAction || 
 							!this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "removeCharBS" 
@@ -573,11 +578,25 @@ dojo.declare(
 								this._undoStack[this._undoStack.length - 1].coords = {x: this.x, y: this.y};
 							}
 						}
-						//nr 18-feb-2008e
          			}else{
-						this.removeSelection();
+						var startToken = this._range.startContainer.parentNode;
+						var endToken = this._range.endContainer.parentNode;
+						var startOffset = this._range.startOffset;
+						var endOffset = this._range.endOffset;
+						var startLine = startToken.parentNode;
+						var endLine = endToken.parentNode;
+						var selStartCoords = this.getTokenPosition(startToken, startOffset);
+						var selEndCoords = this.getTokenPosition(endToken, endOffset);
+						var changes = this.removeSelection();
+						var endCoords = {x: this.x, y: this.y};
+						this.pushIntoUndoStack({
+							action: "removeSelection",
+							endCoords: endCoords,
+							selStartCoords: selStartCoords,
+							selEndCoords: selEndCoords,
+							data: changes.data
+						});
          			}
-					// nr 18-feb-2008
 	                this._lastEditCoords = {x:this.x, y:this.y};
                 break;
 				case dk.CAPS_LOCK:
@@ -591,7 +610,6 @@ dojo.declare(
          			var len = selection.getSelectedText().length;
          			if(!len){
 	                    var changes = this.removeCharAtCaret();
-						//nr 18-feb-2008b
 						if(changes){
 							if(this._pushNextAction || 
 							!this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "removeCharDel" 
@@ -604,17 +622,31 @@ dojo.declare(
 							}else{
 								// au contraire...
 								this._undoStack[this._undoStack.length - 1].data += changes.data;
-								console.log("changes.data: " + this._undoStack[this._undoStack.length - 1].data);
 							}
 						}
-						//nr 18-feb-2008e
          			}else{
-						this.removeSelection();
+						var startToken = this._range.startContainer.parentNode;
+						var endToken = this._range.endContainer.parentNode;
+						var startOffset = this._range.startOffset;
+						var endOffset = this._range.endOffset;
+						var startLine = startToken.parentNode;
+						var endLine = endToken.parentNode;
+						var selStartCoords = this.getTokenPosition(startToken, startOffset);
+						var selEndCoords = this.getTokenPosition(endToken, endOffset);
+						var changes = this.removeSelection();
+						var endCoords = {x: this.x, y: this.y};
+						this.pushIntoUndoStack({
+							action: "removeSelection",
+							endCoords: endCoords,
+							selStartCoords: selStartCoords,
+							selEndCoords: selEndCoords,
+							data: changes.data
+						});
          			}
 	                this._lastEditCoords = {x:this.x, y:this.y};
                 break;
                 case dk.DOWN_ARROW:
-                    if(charCode==0){
+                    if(charCode == 0){
                         if(!lines[y + 1]){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y+1);
 						var kwPar = {
@@ -859,6 +891,7 @@ dojo.declare(
           	this._undoStackIndex++;
         },
         undo: function(){
+			this.clearSelection();
 			var undoStack = this._undoStack;
         	if(!undoStack.length || this._undoStackIndex < 0){ 
 				// nothing to (un)do
@@ -890,7 +923,6 @@ dojo.declare(
 					this.removeCharAtCaret(undoObject.data);
 				}
 			}else if(action == "massiveWrite"){
-				this.clearSelection();
 				var startCoords = undoObject.startCoords;
 				var endCoords = undoObject.endCoords;
 				this.setCaretPosition(startCoords.x, startCoords.y);
@@ -899,12 +931,28 @@ dojo.declare(
 				this.setCaretPosition(endCoords.x, endCoords.y);
 				this.addToSelection({token: startToken, index: index});
 				this.removeSelection();
+			}else if(action == "removeSelection"){
+				var selStartCoords = undoObject.selStartCoords;
+				var selEndCoords = undoObject.selEndCoords;
+				var endCoords = undoObject.endCoords;
+				this.setCaretPosition(endCoords.x, endCoords.y);
+//				for(var i in undoObject.data){
+//					console.log(i + " --> " + undoObject.data[i]);
+//				}
+				this.massiveWrite(undoObject.data);
+				this.setCaretPosition(selStartCoords.x, selStartCoords.y);
+				var startToken = this.currentToken;
+				var index = this.caretIndex;
+				this.setCaretPosition(selEndCoords.x, selEndCoords.y);
+				this.addToSelection({token: startToken, index: index});
+				this.setCaretPosition(endCoords.x, endCoords.y);
 			}
 			if(undoStack.length){
 				this._undoStackIndex--; // pop! (2)
 			}
         },
         redo: function(){
+			this.clearSelection();
 			var undoStack = this._undoStack;
         	if(!undoStack.length || /*this._undoStackIndex < 0 ||*/ this._undoStackIndex == undoStack.length - 1){ 
 				//nothing to (re)do
@@ -941,6 +989,17 @@ dojo.declare(
 				var startCoords = undoObject.startCoords;
 				this.setCaretPosition(startCoords.x, startCoords.y);
 				this.massiveWrite(undoObject.data);
+			}else if(action == "removeSelection"){
+				var selStartCoords = undoObject.selStartCoords;
+				var selEndCoords = undoObject.selEndCoords;
+				var endCoords = undoObject.endCoords;
+				this.setCaretPosition(selStartCoords.x, selStartCoords.y);
+				var startToken = this.currentToken;
+				var index = this.caretIndex;
+				this.setCaretPosition(selEndCoords.x, selEndCoords.y);
+				this.addToSelection({token: startToken, index: index});
+				this.removeSelection();
+				this.setCaretPosition(endCoords.x, endCoords.y);
 			}
         },
 		getContent: function(){
@@ -1099,6 +1158,9 @@ dojo.declare(
         moveCaretBy: function(/*int*/ x, /*int*/ y){
             this.setCaretPosition(this.x + x, this.y + y);
         },
+		getViewPort: function(){
+			
+		},
         setCaretPosition: function(/*int*/ x, /*int*/ y){
             this.caret.style.left = x*this._caretWidth + "px";
             this.x = x;
@@ -1118,7 +1180,6 @@ dojo.declare(
                 this.domNode.scrollTop = _yPx;
             }
 
-            // nr 20-06-2007 (06/20/2007) [added]
             this.currentLineHighLight.style.width = Math.max(this.width, this._caretWidth*(this.x+1)) + "px"; 
             var _xLim =_xPx + 3*this._caretWidth; // a computed value is better than 3...
             if(_xLim >= this.width/* + this.domNode.scrollLeft*/){
@@ -1183,11 +1244,12 @@ dojo.declare(
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e);
             var y = Math.min(parseInt(Math.max(0, evt.layerY) / this.lineHeight), this.numLines()-1);
+			console.log("[setCaretPositionAtPointer] y = " + evt.layerY);
             var x = Math.min(parseInt(Math.max(0, evt.layerX) / this._caretWidth), this.getLineLength(y));
             this.setCaretPosition(x, y);
         },
         createLine: function(){
-            var newLine = document.createElement("pre");
+            var newLine = document.createElement("div");
             newLine.className = "codeTextAreaLine";             
             newLine.style.height = this.lineHeight + "px";
             var _currentToken = this.createLineTerminator();
@@ -1425,7 +1487,7 @@ dojo.declare(
 				var _unparsedToken = "";
 				var _rowText = "";
 				if(i){
-					_rowText = "<pre class=\"codeTextAreaLine\" style=\"height: " + this.lineHeight + "px\">";
+					_rowText = "<div class=\"codeTextAreaLine\" style=\"height: " + this.lineHeight + "px\">";
 				}
 				for(var k = 0; k < row.length; k++){
 					// token classification
@@ -1481,7 +1543,7 @@ dojo.declare(
 					}
 				} // end current row
 				if(i<rows.length-1){
-					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">\u000D</span></pre>";
+					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">\u000D</span></div>";
 				}
 				
 				_parsedContent += _rowText;

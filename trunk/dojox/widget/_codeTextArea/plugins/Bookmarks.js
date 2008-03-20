@@ -10,9 +10,7 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
     var source = args.source;
 	var areaCoords = dojo.coords(source.domNode);
 	var lineHeight = source.lineHeight;
-	
 	var _action = "add";
-
 	// right bar
 	var bookmarksBar = document.createElement("div");
 	bookmarksBar.className = "codeTextAreaBookmarksBar";
