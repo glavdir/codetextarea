@@ -523,6 +523,26 @@ dojo.declare(
             this.colorizeToken(this.currentToken);
 			return {data:selectedText}
         },
+		// find a better name for this method
+		removeSelectionWithUndo: function(){
+			var startToken = this._range.startContainer.parentNode;
+			var endToken = this._range.endContainer.parentNode;
+			var startOffset = this._range.startOffset;
+			var endOffset = this._range.endOffset;
+			var startLine = startToken.parentNode;
+			var endLine = endToken.parentNode;
+			var selStartCoords = this.getTokenPosition(startToken, startOffset);
+			var selEndCoords = this.getTokenPosition(endToken, endOffset);
+			var changes = this.removeSelection();
+			var endCoords = {x: this.x, y: this.y};
+			this.pushIntoUndoStack({
+				action: "removeSelection",
+				endCoords: endCoords,
+				selStartCoords: selStartCoords,
+				selEndCoords: selEndCoords,
+				data: changes.data
+			});
+		},
         keyPressHandler: function(evt){
 			if(this._blockedEvents) { return; }
             if (this._preventLoops){
@@ -550,9 +570,7 @@ dojo.declare(
                 case dk.BACKSPACE:
                     // refactor! shared code with caret left...
          			//this.clearSelection();
-         			var selection = this.getSelection();
-         			var len = selection.getSelectedText().length;
-         			if(!len){
+         			if(!this.getSelection().getSelectedText().length){
          				if(!(x||y)){ return; }
 						var _oldX = this.x;
 						var _oldY = this.y;
@@ -579,23 +597,7 @@ dojo.declare(
 							}
 						}
          			}else{
-						var startToken = this._range.startContainer.parentNode;
-						var endToken = this._range.endContainer.parentNode;
-						var startOffset = this._range.startOffset;
-						var endOffset = this._range.endOffset;
-						var startLine = startToken.parentNode;
-						var endLine = endToken.parentNode;
-						var selStartCoords = this.getTokenPosition(startToken, startOffset);
-						var selEndCoords = this.getTokenPosition(endToken, endOffset);
-						var changes = this.removeSelection();
-						var endCoords = {x: this.x, y: this.y};
-						this.pushIntoUndoStack({
-							action: "removeSelection",
-							endCoords: endCoords,
-							selStartCoords: selStartCoords,
-							selEndCoords: selEndCoords,
-							data: changes.data
-						});
+						this.removeSelectionWithUndo();
          			}
 	                this._lastEditCoords = {x:this.x, y:this.y};
                 break;
@@ -606,9 +608,7 @@ dojo.declare(
                         this._specialKeyPressed = false;
                         break; 
                     }
-         			var selection = this.getSelection();
-         			var len = selection.getSelectedText().length;
-         			if(!len){
+         			if(!this.getSelection().getSelectedText().length){
 	                    var changes = this.removeCharAtCaret();
 						if(changes){
 							if(this._pushNextAction || 
@@ -625,23 +625,7 @@ dojo.declare(
 							}
 						}
          			}else{
-						var startToken = this._range.startContainer.parentNode;
-						var endToken = this._range.endContainer.parentNode;
-						var startOffset = this._range.startOffset;
-						var endOffset = this._range.endOffset;
-						var startLine = startToken.parentNode;
-						var endLine = endToken.parentNode;
-						var selStartCoords = this.getTokenPosition(startToken, startOffset);
-						var selEndCoords = this.getTokenPosition(endToken, endOffset);
-						var changes = this.removeSelection();
-						var endCoords = {x: this.x, y: this.y};
-						this.pushIntoUndoStack({
-							action: "removeSelection",
-							endCoords: endCoords,
-							selStartCoords: selStartCoords,
-							selEndCoords: selEndCoords,
-							data: changes.data
-						});
+						this.removeSelectionWithUndo();
          			}
 	                this._lastEditCoords = {x:this.x, y:this.y};
                 break;
@@ -1333,6 +1317,9 @@ dojo.declare(
             return tokenType;
         },
         writeToken: function(/*String*/ content, /*Boolean*/ moveCaret, /*Boolean*/ substCaret){
+			if(this.getSelection().getSelectedText().length){
+				this.removeSelectionWithUndo();
+			}
 			var originalContent = content;
             if(!content){ return; }
 			var typeChange = false;
