@@ -30,7 +30,7 @@ dojo.declare(
         plugins: "",
         // _caretWidth: Integer
         _caretWidth: 0,
-        // _caretWidth: Integer
+        // linHeight: Integer
         lineHeight: 0,
         /*boolean*/
         _specialKeyPressed: false,
@@ -52,16 +52,10 @@ dojo.declare(
         commands: {},
         autocompleteDictionary: {},
         colorsDictionary: {},
-        _suggestionsPopup: null,
-        _suggestionList: null,
-        _suggestionsMenu: null,
         _suggestionBlocked: false,
-        _keyUpHandler: null,
-        _keyPressHandler: null,
         _eventHandlers: [],
         suggestionsCombo: null,
         _targetToken: null,
-        _blockedKeyCombinations: {},
         _preventLoops: false,
 		// undo vars start
        	_undoStack: [],
@@ -70,15 +64,15 @@ dojo.declare(
 		_pushNextAction: false,
 		// undo vars end
         _symbols: [
-        	{"." : "context-separator"},
-        	{" " : "separator"},
+        	{"."    : "context-separator"},
+        	{" "    : "separator"},
         	{"    " : "separator"},
-        	{"(" : "parenthesis"},
-        	{")" : "parenthesis"},
-        	{"[" : "parenthesis"},
-        	{"]" : "parenthesis"},
-        	{"{" : "parenthesis"},
-        	{"}" : "parenthesis"}
+        	{"("    : "parenthesis"},
+        	{")"    : "parenthesis"},
+        	{"["    : "parenthesis"},
+        	{"]"    : "parenthesis"},
+        	{"{"    : "parenthesis"},
+        	{"}"    : "parenthesis"}
         ],
         postCreate: function(){
 			this.leftBand.id = this.id + "leftBand";
@@ -108,18 +102,18 @@ dojo.declare(
 			});
             dojo.connect(this.domNode, "onmouseup", this, "setCaretPositionAtPointer");
             dojo.connect(this.domNode, "onclick", this, "blur");
-            // this._caret: a little trick for Opera...
-            this._caret = document.createElement("input");
-            this._caret.type = "text";
-            this._caret.name = "_caret";
-            this._caret.style.position = "absolute";
-            this._caret.style.display = "none";
-            this._caret.style.top = "-13px";
-            this._caret.style.border = "1px solid red";
-            this._caret.style.right = "-500px";
+            // this._caret: a little trick for Opera... TODO
+//            this._caret = document.createElement("input");
+//            this._caret.type = "text";
+//            this._caret.name = "_caret";
+//            this._caret.style.position = "absolute";
+//            this._caret.style.display = "none";
+//            this._caret.style.top = "-13px";
+//            this._caret.style.border = "1px solid red";
+//            this._caret.style.right = "-500px";
             // end this._caret section.
             this.setCaretPosition(0, 0); 
-            document.body.appendChild(this._caret);    
+//            document.body.appendChild(this._caret);    
         },
         _initializeSuggestionsPopup: function(){
             var _comboNode = document.createElement("div");
@@ -636,7 +630,7 @@ dojo.declare(
 						var kwPar = {
 							token: this.currentToken,
 							index: this.caretIndex
-						}
+						};
 						
                         this.setCaretPosition(x < lineLength ? x : lineLength, y+1);
 
@@ -651,14 +645,14 @@ dojo.declare(
                     }
                 break;
                 case dk.LEFT_WINDOW:
-                    if(charCode==0){
+                    if(charCode == 0){
                     }else{
                         // open square bracket [
                         this._specialKeyPressed = false;
                     }
                 break;
                 case dk.LEFT_ARROW:
-                    if(charCode==0){
+                    if(charCode == 0){
                         if(x){
 							var kwPar = {
 								token: this.currentToken,
@@ -681,7 +675,7 @@ dojo.declare(
                 break;
                 
                 case dk.RIGHT_ARROW:
-                    if(charCode==0){
+                    if(charCode == 0){
                         if(x<this.getLineLength(y)){
 							var kwPar = {
 								token: this.currentToken,
@@ -704,7 +698,7 @@ dojo.declare(
                     }
                 break;
                 case dk.UP_ARROW:
-                    if(charCode==0){
+                    if(charCode == 0){
                         if(y<1){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y-1);
 						var kwPar = {
@@ -724,7 +718,7 @@ dojo.declare(
                     }
                 break;
                 case dk.HOME:
-                    if(charCode==0){
+                    if(charCode == 0){
                         this.setCaretPosition(0,this.y);
                     }else{
                         // dollar $
@@ -732,7 +726,7 @@ dojo.declare(
                     }
                 break;
                 case dk.END:
-                    if(charCode==0){
+                    if(charCode == 0){
                         this.setCaretPosition(this.getLineLength(this.y),this.y);
                     }else{
                         // hash #
@@ -848,9 +842,6 @@ dojo.declare(
                     }
                 break;
                 default:
-//                    var _ctrlPressed = evt.ctrlKey ? "CTRL+" : "";
-//                    var _shiftPressed = evt.shiftKey ? "SHIFT+" : "";
-//                    if(!this._blockedKeyCombinations[_ctrlPressed+_shiftPressed+String.fromCharCode(resCode)]){
                     if(!evt.ctrlKey){
                         this._specialKeyPressed = false;
                     }
@@ -1145,7 +1136,7 @@ dojo.declare(
 		getViewPort: function(){
 			
 		},
-        setCaretPosition: function(/*int*/ x, /*int*/ y){
+        setCaretPosition: function(/*int*/ x, /*int*/ y, /*boolean*/ noColor){
             this.caret.style.left = x*this._caretWidth + "px";
             this.x = x;
             var _xPx = x*this._caretWidth;
@@ -1154,7 +1145,7 @@ dojo.declare(
             this.y = y;
             
             this.setCurrentTokenAtCaret();
-            this.colorizeToken(this.currentToken);
+            if(!noColor){ this.colorizeToken(this.currentToken); }
             // scroll
             // scrollHeight grows...
             var _yLim =_yPx + 2*this.lineHeight;
@@ -1316,6 +1307,26 @@ dojo.declare(
             }
             return tokenType;
         },
+		getViewPort: function(){
+			var lineHeight = this.lineHeight;
+			var scrollTop = this.domNode.scrollTop;
+			var startLine = parseInt(scrollTop / lineHeight);
+			var endLine = Math.min(parseInt((scrollTop + this.height) / lineHeight), this.linesCollection.length - 1);
+			return { startLine: startLine, endLine: endLine };
+		},
+		colorizeViewPort: function(){
+			var lines = this.getViewPort();
+			for(var i = lines.startLine; i <= lines.endLine; i++){
+				this.colorizeLine(this.linesCollection[i]);
+			}
+		},
+		colorizeLine: function(line){
+			var tokens = line.childNodes;
+			var len = tokens.length;
+			for(var i = 0; i < len - 1; i++){
+				this.colorizeToken(tokens[i]);
+			}
+		},
         writeToken: function(/*String*/ content, /*Boolean*/ moveCaret, /*Boolean*/ substCaret){
 			if(this.getSelection().getSelectedText().length){
 				this.removeSelectionWithUndo();
