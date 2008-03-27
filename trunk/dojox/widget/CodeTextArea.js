@@ -74,6 +74,10 @@ dojo.declare(
         	{"{"    : "parenthesis"},
         	{"}"    : "parenthesis"}
         ],
+		uniqueTokens:{
+			parenthesis: true,
+			"context-separator": true
+		},
         postCreate: function(){
 			this.leftBand.id = this.id + "leftBand";
             this.loadDictionary(this.autocompleteUrl, dojo.hitch(this, this._autocompleteFiller));
@@ -1413,10 +1417,10 @@ dojo.declare(
                 // *************************************************************
                 var _prev = this.currentToken.previousSibling;
                 var _targetToken;
-                if(_prev && _prev.getAttribute("tokenType") == tokenType){
+                if(_prev && _prev.getAttribute("tokenType") == tokenType && !this.uniqueTokens[tokenType]){
                     _targetToken = _prev;
                     _targetToken.replaceChild(document.createTextNode(_targetToken.firstChild.data + content), _targetToken.firstChild);
-                }else if(tokenType == currentTokenType/* || currentTokenType == ""*/){
+                }else if(tokenType == currentTokenType && !this.uniqueTokens[tokenType]/* || currentTokenType == ""*/){
                     // if currentTokenType == "" => first (unique) token in this line
                     _targetToken = this.currentToken;
                     _targetToken.replaceChild(document.createTextNode(content + _targetToken.firstChild.data), _targetToken.firstChild);
