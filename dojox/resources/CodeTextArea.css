@@ -115,3 +115,6 @@ input.suggester{
 	z-index:10;
 	cursor:pointer;
 }
+span.matchingBracket{
+	color:red;
+}
