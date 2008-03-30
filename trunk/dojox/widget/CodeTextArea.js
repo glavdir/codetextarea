@@ -65,17 +65,26 @@ dojo.declare(
 		// undo vars end
         _symbols: [
         	{"."    : "context-separator"},
+        	{"'"    : "single-quote"},
+        	{"\""    : "double-quote"},
         	{" "    : "separator"},
         	{"    " : "separator"},
-        	{"("    : "parenthesis"},
-        	{")"    : "parenthesis"},
-        	{"["    : "parenthesis"},
-        	{"]"    : "parenthesis"},
-        	{"{"    : "parenthesis"},
-        	{"}"    : "parenthesis"}
+        	{"("    : "open-round-bracket"},
+        	{")"    : "closed-round-bracket"},
+        	{"["    : "open-square-bracket"},
+        	{"]"    : "closed-square-bracket"},
+        	{"{"    : "open-curly-bracket"},
+        	{"}"    : "closed-curly-bracket"}
         ],
 		uniqueTokens:{
-			parenthesis: true,
+			"open-round-bracket": true,
+			"open-square-bracket": true,
+			"open-curly-bracket": true,
+			"closed-round-bracket": true,
+			"closed-square-bracket": true,
+			"closed-curly-bracket": true,
+			"single-quote": true,
+			"double-quote": true,
 			"context-separator": true
 		},
         postCreate: function(){
@@ -1068,6 +1077,7 @@ dojo.declare(
             this.mergeSimilarTokens(_prevToken, _currentToken);
             this.setCurrentTokenAtCaret();
             this.colorizeToken(this.currentToken);
+			dojo.publish(this.id + "::removeCharAtCaret");
 			return {data: removedChar};
         },
         removeLine: function(/*line*/ targetLine, /*integer*/ y){
@@ -1444,6 +1454,7 @@ dojo.declare(
                 }
                 this.currentToken = _targetToken;
             }
+			dojo.publish(this.id + "::writeToken", [{tokenType:tokenType}]);
 			return {data: originalContent, typeChange: typeChange};
         },
         substCaretPosition: function(){
