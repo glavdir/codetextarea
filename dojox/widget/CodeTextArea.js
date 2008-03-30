@@ -1100,7 +1100,7 @@ dojo.declare(
             }
         },
         mergeSimilarTokens: function(/*token*/ sourceToken, /*token*/ targetToken, /*boolean*/ inverted){
-        	if(targetToken && sourceToken && targetToken.getAttribute("tokenType") == sourceToken.getAttribute("tokenType")){
+        	if(targetToken && sourceToken && targetToken.getAttribute("tokenType") == sourceToken.getAttribute("tokenType") && !this.uniqueTokens[targetToken.getAttribute("tokenType")]){
 				if(!inverted){
 	            	targetToken.firstChild.data = sourceToken.firstChild.data + targetToken.firstChild.data;
 				}else{
@@ -1532,11 +1532,11 @@ dojo.declare(
 					
 					// type controls
 
-					if(_currentType === _previousType && k < row.length - 1){
+					if(_currentType === _previousType && k < row.length - 1 && !this.uniqueTokens[_currentType]){
 						_workingToken += _currentChar;
 						_unparsedToken += _oldChar;
 					}else{ // type change or end of line
-						if(_currentType === _previousType){
+						if(_currentType === _previousType && !this.uniqueTokens[_currentType]){
 							_workingToken += _currentChar;
 							_unparsedToken += _oldChar;
 						}
@@ -1544,12 +1544,10 @@ dojo.declare(
 							var _class = (_workingToken in cDict) ? cDict[_workingToken].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _previousType + "\">" + _workingToken + "</span>";
 						}
-						// nr 06-jan-2008b
-						if(k == row.length - 1 && _currentType !== _previousType){
+						if(k == row.length - 1 && (_currentType !== _previousType || (_currentType === _previousType && this.uniqueTokens[_currentType])) ){
 							var _class = (_currentChar in cDict) ? cDict[_currentChar].className : "";
 							_rowText += "<span class=\"" + _class + "\" tokenType=\"" + _currentType + "\">" + _currentChar + "</span>";
 						}
-						// nr 06-jan-2008e
 						_workingToken = _currentChar;
 						_unparsedToken = _oldChar;
 						_previousType = _currentType;
@@ -1584,6 +1582,7 @@ dojo.declare(
 			this.currentToken = _savedCurrentToken;
 			this.setCurrentTokenAtCaret();
 			if(!content){ return "" }
+			dojo.publish(this.id + "::massiveWrite");
 			return {data: content, startCoords: startCoords};
         },
         // handles the single token colorization
