@@ -350,6 +350,7 @@ dojo.declare(
 			var secondToken = toToken.token;
 			var secondIndex = toToken.index;
 			var indexOf = this.indexOf;
+			console.log(indexOf);
 			var firstParent = firstToken.parentNode;
 			var secondParent = secondToken.parentNode;
 			if(firstToken === secondToken && firstIndex == secondIndex){
@@ -1233,7 +1234,6 @@ dojo.declare(
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e);
             var y = Math.min(parseInt(Math.max(0, evt.layerY) / this.lineHeight), this.numLines()-1);
-			console.log("[setCaretPositionAtPointer] y = " + evt.layerY);
             var x = Math.min(parseInt(Math.max(0, evt.layerX) / this._caretWidth), this.getLineLength(y));
             this.setCaretPosition(x, y);
         },
