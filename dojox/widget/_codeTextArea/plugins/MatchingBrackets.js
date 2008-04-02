@@ -101,19 +101,11 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets.startup = function(args){
 	};
 	var insertBracket = function(bracket){
 		var len = brackets.length;
-		if(len != 0){
-			var i = 0;
-			while(source.compareTokenPosition({token:brackets[i], index:0}, {token:bracket, index:0}) == -1 && i < len - 1){
-				i++;
-			}
-			if(i != brackets.length - 1){
-				brackets.splice(i + 1, 0, bracket);
-			}else{
-				brackets.push(bracket);
-			}		
-		}else{
-			brackets.push(bracket);
+		var i = 0;
+		while(i < len && source.compareTokenPosition({token:brackets[i], index:0}, {token:bracket, index:0}) == -1){
+			i++;
 		}
+		brackets.splice(i, 0, bracket);
 	};
 	var pushBracket = function(){
 		var token = source.currentToken;

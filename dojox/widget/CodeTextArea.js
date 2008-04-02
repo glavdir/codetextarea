@@ -350,7 +350,6 @@ dojo.declare(
 			var secondToken = toToken.token;
 			var secondIndex = toToken.index;
 			var indexOf = this.indexOf;
-			console.log(indexOf);
 			var firstParent = firstToken.parentNode;
 			var secondParent = secondToken.parentNode;
 			if(firstToken === secondToken && firstIndex == secondIndex){
@@ -1691,7 +1690,7 @@ dojo.declare(
                         dojox.widget._codeTextArea.plugins[plugins[i]].startup({source:this});
                     }
                 }catch(error){
-                    console.debug("plugin \"" + plugins[i] + "\" not found");
+                    console.log("plugin \"" + plugins[i] + "\" not found");
                 }                
             }
         },
