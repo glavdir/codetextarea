@@ -12,15 +12,23 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	var lineHeight = source.lineHeight;
 	var _action = "add";
 	// right bar
-	var bookmarksBar = document.createElement("div");
+	var bookmarksBar = dojo.byId("bookmarksBar") || document.createElement("div");
 	bookmarksBar.className = "codeTextAreaBookmarksBar";
 	with(bookmarksBar.style){
-		top = areaCoords.y + "px";
-		left = areaCoords.x + source.width + "px";
+//		top = areaCoords.y + "px";
+//		left = areaCoords.x + source.width + "px";
 		height = source.height + "px";
 	}
-	document.body.appendChild(bookmarksBar);
+//	source.domNode.style.cssFloat = "left";
+//	source.domNode.style.styleFloat = "left";
 
+//    dijit.placeOnScreenAroundElement(bookmarksBar, source.domNode, {'TR' : 'TL'});
+//	source.domNode.parentNode.appendChild(bookmarksBar);
+
+
+//	bookmarksBar.style.cssFloat = "left";
+//	bookmarksBar.style.styleFloat = "left";
+	//source.domNode.parentNode.appendChild(bookmarksBar);
 	// dialog
 	var _bookmarkDialogNode = document.createElement("div");
 	var _caption = document.createElement("span");

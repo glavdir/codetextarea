@@ -57,6 +57,7 @@ dojo.declare(
         suggestionsCombo: null,
         _targetToken: null,
         _preventLoops: false,
+
 		// undo vars start
        	_undoStack: [],
        	_undoStackIndex: -1,
@@ -66,9 +67,11 @@ dojo.declare(
         _symbols: [
         	{"."    : "context-separator"},
         	{"'"    : "single-quote"},
-        	{"\""    : "double-quote"},
+        	{"\""   : "double-quote"},
         	{" "    : "separator"},
         	{"    " : "separator"},
+        	{"/*"   : "open-block-comment"},
+        	{"*/"   : "closed-block-comment"},
         	{"("    : "open-round-bracket"},
         	{")"    : "closed-round-bracket"},
         	{"["    : "open-square-bracket"},
@@ -134,7 +137,7 @@ dojo.declare(
             _comboNode.style.top = "0";
             _comboNode.style.left = "0";
             _comboNode.style.display = "none";
-            dojo.body().appendChild(_comboNode);
+            this.domNode.parentNode.appendChild(_comboNode);
             var store = new dojo.data.ItemFileReadStore({url: this.autocompleteUrl });
             
             this.suggestionsCombo = new dijit.form.ComboBox({
@@ -1147,9 +1150,6 @@ dojo.declare(
         moveCaretBy: function(/*int*/ x, /*int*/ y){
             this.setCaretPosition(this.x + x, this.y + y);
         },
-		getViewPort: function(){
-			
-		},
         setCaretPosition: function(/*int*/ x, /*int*/ y, /*boolean*/ noColor){
             this.caret.style.left = x*this._caretWidth + "px";
             this.x = x;
@@ -1474,7 +1474,105 @@ dojo.declare(
         	if(!target.parentNode){ return };
             target.parentNode.removeChild(target);
         },
+		parseLine: function(args){
+			var line = args.line;
+			var force = args.force;
+		},
+		parseViewport: function(args){
+			var force = args.force;
+			var lines = this.getViewPort();
+			for(var i = lines.startLine; i <= lines.endLine; i++){
+				this.parseLine({line: this.linesCollection[i], force: force});
+			}
+		},
+		_massiveWrite: function(content){
+            // find the caret position
+			var time0 = (new Date()).getTime()
+            var _yIncrement = 0;
+            var _savedCurrentToken = this.currentToken;
+            var _savedPreviousToken = this.previousToken;
+            this.substCaretPosition();
+			var startCoords = { x: this.x, y: this.y };
+            var _initialContent = this.lines.innerHTML;
+            var _index = this._getTextDelimiter(_initialContent);
+            var _firstFragment = _initialContent.substring(0, _index);
+            var _lastFragment = _initialContent.substring(_index);
+            var _parsedContent = "";
+            var rows = content.split(/\n\r|\r\n|\r|\n/);
+			_yIncrement = rows.length - 1;
+            var tokens = [];            
+			var cDict = this.colorsDictionary;
+            for(var i = 0; i < rows.length; i++){
+				// START new solution 09-23-2007
+				var row = rows[i];
+				var _rowText = "";
+				if(i){
+					_rowText = "<div class=\"codeTextAreaLine\" style=\"height: " + this.lineHeight + "px\">";
+				}
+				for(var k = 0; k < row.length; k++){
+					// token classification
+					var _currentChar = row.charAt(k);
+					var _oldChar = _currentChar;
+					// html START
+					if(_currentChar == "&"){
+						_currentChar = "&amp;";
+					}else if(_currentChar == "\t"){
+						_currentChar = "    ";
+					}else if(_currentChar == "<"){
+						_currentChar = "&lt;";
+					}else if(_currentChar == ">"){
+						_currentChar = "&gt;";
+					}else if(_currentChar == ";"){
+						//window.alert("fullstop");
+					}
+					// html END
+					
+					if(_currentChar == " "){
+						_currentChar = "&nbsp;";
+					}else if(_currentChar == "    "){ // find a better way to do this
+						_currentChar = "&nbsp;&nbsp;&nbsp;&nbsp;";
+					}
+					
+					// type controls
+
+					_rowText += _currentChar;
+				} // end current row
+				if(i<rows.length-1){
+					_rowText += "<span style=\"visibility:hidden\" tokenType=\"line-terminator\">\u000D</span></div>";
+				}
+				
+				_parsedContent += _rowText;
+				// END new solution 09-23-2007
+            } // end rows cycle
+            
+			var _insertionPoint = this.y;
+            var newContent = _firstFragment + _parsedContent + _lastFragment;
+            if(!dojo.isIE){
+            	this.lines.innerHTML = newContent;
+            }else{
+            	this.lines.innerHTML = "";
+            	var container = document.createElement("div");
+            	this.lines.appendChild(container);
+            	container.outerHTML = newContent;
+            }
+
+			this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
+            var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
+
+			this._removeDelimiter(_delimiters[0]);
+			//this.moveCaretAtToken(_delimiters[1], 0);
+			this._removeDelimiter(_delimiters[1]);
+
+			this.currentToken = _savedCurrentToken;
+			this.setCurrentTokenAtCaret();
+			if(!content){ return "" }
+			dojo.publish(this.id + "::massiveWrite");
+			var time1 = (new Date()).getTime()
+			console.log("massiveWrite " + (time1-time0) + "ms");
+			return {data: content, startCoords: startCoords};
+		},	
         massiveWrite: function(content){
+			var time0 = (new Date()).getTime()
             // find the caret position
             var _yIncrement = 0;
             var _savedCurrentToken = this.currentToken;
@@ -1582,6 +1680,8 @@ dojo.declare(
 			this.setCurrentTokenAtCaret();
 			if(!content){ return "" }
 			dojo.publish(this.id + "::massiveWrite");
+			var time1 = (new Date()).getTime()
+			console.log("massiveWrite " + (time1-time0) + "ms");
 			return {data: content, startCoords: startCoords};
         },
         // handles the single token colorization
@@ -1635,7 +1735,7 @@ dojo.declare(
             this._targetToken = _targetToken;
             this.suggestionsCombo.setDisplayedValue(_toComplete);
             this.suggestionsCombo.domNode.style.display = "block";
-            dijit.placeOnScreenAroundElement(this.suggestionsCombo.domNode, _targetToken, {'TL' : 'TL', 'TR' : 'TR'});
+            dijit.placeOnScreenAroundElement(this.suggestionsCombo.domNode, _targetToken, {'TL' : 'TL'});
             this.suggestionsCombo.focus();
 
             // bill: can you make _startSearch public? pleeeease! ^__^
