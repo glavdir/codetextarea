@@ -8,7 +8,7 @@
 	font:13px monospace;
 	padding:0;
 }
-table.dojoCodeWrapper{
+table.dojoCodeTextAreaWrapper{
 	position:absolute;
 	z-index:100;
 	top:0;
@@ -18,7 +18,7 @@ table.dojoCodeWrapper{
 	border:0;
 	margin:0;
 }
-table.dojoCodeWrapper tr, table.dojoCodeWrapper tr td{
+table.dojoCodeTextAreaWrapper tr, table.dojoCodeTextAreaWrapper tr td{
 	margin:0;
 	padding:0;
 	border:0;
@@ -101,7 +101,7 @@ input.suggester{
 }
 .codeTextAreaBookmarksBar{
 	background:#ccc;
-	position:absolute;
+	position:relative;
 	width: 12px;
 }
 .codeTextAreaBookmarksBar .placeholder{
