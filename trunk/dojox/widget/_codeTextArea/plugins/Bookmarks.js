@@ -15,20 +15,13 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	var bookmarksBar = dojo.byId("bookmarksBar") || document.createElement("div");
 	bookmarksBar.className = "codeTextAreaBookmarksBar";
 	with(bookmarksBar.style){
-//		top = areaCoords.y + "px";
-//		left = areaCoords.x + source.width + "px";
-		height = source.height + "px";
+		height = source.getHeight() + "px";
 	}
-//	source.domNode.style.cssFloat = "left";
-//	source.domNode.style.styleFloat = "left";
 
 //    dijit.placeOnScreenAroundElement(bookmarksBar, source.domNode, {'TR' : 'TL'});
 //	source.domNode.parentNode.appendChild(bookmarksBar);
 
 
-//	bookmarksBar.style.cssFloat = "left";
-//	bookmarksBar.style.styleFloat = "left";
-	//source.domNode.parentNode.appendChild(bookmarksBar);
 	// dialog
 	var _bookmarkDialogNode = document.createElement("div");
 	var _caption = document.createElement("span");
@@ -40,6 +33,12 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	_caption.className = "codeTextAreaDialogCaption";
 	_bookmarkDialogNode.appendChild(_caption)
 	_bookmarkDialogNode.appendChild(_bookmarkField);
+
+	var _self = this;
+	dojo.connect(source, "resize", function(){
+		bookmarksBar.style.height = source.getHeight() + "px";
+	});
+
 	var bookmarkDialog = new dijit.Dialog({
 	        title: "Add Bookmark",
 	        duration: 40
@@ -71,7 +70,7 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 				bookmarks[i].index += (signum*params.rows);
 			}
 			bookmarks[i].bookmark.style.top = bookmarks[i].index*lineHeight + "px";
-			placeholder.style.top = parseInt((bookmarks[i].index / source.linesCollection.length)*source.height) + "px";
+			placeholder.style.top = parseInt((bookmarks[i].index / source.linesCollection.length)*source.getHeight()) + "px";
 		}
 	};
 	var gotoBookmark = function(oBookmark){
@@ -92,7 +91,7 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 			bookmark: bookmark
 		};
 		dojo.connect(placeholder, "onclick", function(e){ gotoBookmark(oBookmark) });
-		placeholder.style.top = parseInt((index / source.linesCollection.length)*source.height) + "px";
+		placeholder.style.top = parseInt((index / source.linesCollection.length)*source.getHeight()) + "px";
 		bookmarksBar.appendChild(placeholder);
 		bookmark.title = _bookmarkField.value;
 		placeholder.title = _bookmarkField.value;

@@ -18,8 +18,8 @@ dojo.declare(
         isContainer: true,
 
         // parameters
-        height: 100,
-        width: 800,
+        height: "100%",
+        width: "100%",
         // attach points
         currentLineHighLight: null,
         caret: null,
@@ -28,6 +28,7 @@ dojo.declare(
         // y: Integer
         y: 0,
         plugins: "",
+		resizeTo: "",
         // _caretWidth: Integer
         _caretWidth: 0,
         // linHeight: Integer
@@ -91,7 +92,18 @@ dojo.declare(
 			"context-separator": true
 		},
         postCreate: function(){
+			if(this.resizeTo){
+				var _container = dijit.byId(this.resizeTo); 
+				if(_container){
+					var _self = this;
+					dojo.connect(_container, "resize", function(){
+						var coords = dojo.coords(dojo.byId(_self.resizeTo));
+						_self.resize({w:coords.w, h:coords.h});
+					});
+				}
+			}
 			this.leftBand.id = this.id + "leftBand";
+			this.lines.style.width = (dojo.coords(this.domNode).w - dojo.coords(this.leftBand).w) + "px";
             this.loadDictionary(this.autocompleteUrl, dojo.hitch(this, this._autocompleteFiller));
             this.loadDictionary(this.colorsUrl, dojo.hitch(this, this._colorsFiller));
             this.linesCollection = this.lines.getElementsByTagName("div");
@@ -118,19 +130,12 @@ dojo.declare(
 			});
             dojo.connect(this.domNode, "onmouseup", this, "setCaretPositionAtPointer");
             dojo.connect(this.domNode, "onclick", this, "blur");
-            // this._caret: a little trick for Opera... TODO
-//            this._caret = document.createElement("input");
-//            this._caret.type = "text";
-//            this._caret.name = "_caret";
-//            this._caret.style.position = "absolute";
-//            this._caret.style.display = "none";
-//            this._caret.style.top = "-13px";
-//            this._caret.style.border = "1px solid red";
-//            this._caret.style.right = "-500px";
-            // end this._caret section.
             this.setCaretPosition(0, 0); 
-//            document.body.appendChild(this._caret);    
         },
+		resize: function(args){
+			this.domNode.parentNode.style.width = args.w + "px";
+			this.domNode.style.height = args.h + "px";
+		},
         _initializeSuggestionsPopup: function(){
             var _comboNode = document.createElement("div");
             _comboNode.style.position = "absolute";
@@ -176,7 +181,6 @@ dojo.declare(
             // to solve IE scroll problem; find another solution
 //            document.body.focus();
         },
-        
         loadDictionary: function(url, callBack){
             var _self = this;
             var getArgs = {
@@ -233,6 +237,12 @@ dojo.declare(
         _dictionaryLoadError: function(error){
             window.alert(error);
         },
+		getWidth: function(){
+			return dojo.coords(this.domNode).w;
+		},
+		getHeight: function(){
+			return dojo.coords(this.domNode).h;
+		},
         getLineLength: function(/*int*/ y){
             var line = this.linesCollection[y];
             return line ? this.getLineContent(line).length-1 : 0;  
@@ -1160,19 +1170,21 @@ dojo.declare(
             
             this.setCurrentTokenAtCaret();
             if(!noColor){ this.colorizeToken(this.currentToken); }
+
             // scroll
-            // scrollHeight grows...
+
+			var w = this.getWidth();
+			var h = this.getHeight();
             var _yLim =_yPx + 2*this.lineHeight;
-            if(_yLim >= this.height + this.domNode.scrollTop){
-                this.domNode.scrollTop = _yLim - this.height;
+            if(_yLim >= h + this.domNode.scrollTop){
+                this.domNode.scrollTop = _yLim - h;
             }else if(_yPx < this.domNode.scrollTop){
                 this.domNode.scrollTop = _yPx;
             }
-
-            this.currentLineHighLight.style.width = Math.max(this.width, this._caretWidth*(this.x+1)) + "px"; 
+            this.currentLineHighLight.style.width = Math.max(w, this._caretWidth*(this.x+1)) + "px"; 
             var _xLim =_xPx + 3*this._caretWidth; // a computed value is better than 3...
-            if(_xLim >= this.width/* + this.domNode.scrollLeft*/){
-                this.domNode.scrollLeft = _xLim - this.width;
+            if(_xLim >= w/* + this.domNode.scrollLeft*/){
+                this.domNode.scrollLeft = _xLim - w;
             }else if(_xPx < this.domNode.scrollLeft){
                 this.domNode.scrollLeft = _xPx;
             }
@@ -1324,7 +1336,7 @@ dojo.declare(
 			var lineHeight = this.lineHeight;
 			var scrollTop = this.domNode.scrollTop;
 			var startLine = parseInt(scrollTop / lineHeight);
-			var endLine = Math.min(parseInt((scrollTop + this.height) / lineHeight), this.linesCollection.length - 1);
+			var endLine = Math.min(parseInt((scrollTop + h) / lineHeight), this.linesCollection.length - 1);
 			return { startLine: startLine, endLine: endLine };
 		},
 		colorizeViewPort: function(){
