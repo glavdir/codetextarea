@@ -49,7 +49,19 @@
   	ctrl + l: goto line<br />
 	ctrl + b: goto matching bracket <br />
 	<br />
-<div id="cta" dojoType="dojox.widget.CodeTextArea" plugins="BlinkingCaret GoToLineDialog Bookmarks MatchingBrackets" colorsUrl="javascript_dojo_color.json" autocompleteUrl="javascript_dojo_ac.json" height="500" width="1000"></div>
+	<table id="mainContainer">
+		<tbody>
+			<tr>
+				<td>
+					<div id="cta" dojoType="dojox.widget.CodeTextArea" 
+					plugins="BlinkingCaret GoToLineDialog Bookmarks MatchingBrackets" 
+					colorsUrl="javascript_dojo_color.json"
+					autocompleteUrl="javascript_dojo_ac.json" height="400" width="1000"></div>
+				</td>
+				<td style="width:12px"><div id="bookmarksBar"></div></td>
+			</tr>
+		</tbody>
+	</table>
 <div id="footer"><div id="coords"><div>1:1</div></div></div>
 
 <input type="button" name="viewInner" value="view innerHTML" id="viewInner"/> 
