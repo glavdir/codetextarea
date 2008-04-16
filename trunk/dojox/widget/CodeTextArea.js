@@ -31,7 +31,7 @@ dojo.declare(
 		resizeTo: "",
         // _caretWidth: Integer
         _caretWidth: 0,
-        // linHeight: Integer
+        // lineHeight: Integer
         lineHeight: 0,
         /*boolean*/
         _specialKeyPressed: false,
@@ -47,7 +47,6 @@ dojo.declare(
         lastCaretIndex: 0,
         colorsUrl: "",
         autocompleteUrl: "",
-        _caret: null,
         _command: 0,
 		_blockedEvents: false,
         commands: {},
@@ -114,7 +113,7 @@ dojo.declare(
             this._initializeClipboard();
             this._initializeSuggestionsPopup();
             this._initializeRange();
-			this._addRowNumber({position: 1, rows:10});
+			this._addRowNumber({position: 1, rows:100});
 			var _self = this;
 	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, _self._addRowNumber));
 	    	dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, _self._removeRowNumber));
@@ -284,13 +283,11 @@ dojo.declare(
 					}
                 break;
                 case cmd.CLEARSELECTION:
+					this.clearSelection();
                 default:
                 break;
             }
             this._command = cmd.NONE;
-        },
-        paste: function(content){
-            this.write(content, true);
         },
         keyUpHandler: function(evt){
 			if(this._blockedEvents) { return; }
@@ -827,9 +824,6 @@ dojo.declare(
                         this.removeSelection();
                         this._clipboard.focus();
                         this._clipboard.select();
-//                        this._clipboard.value = "";
-//                        this._clipboard.focus();
-//                        this._command = cmd.PASTE;
                         this._specialKeyPressed = true;
                         return;
                     }
@@ -852,8 +846,6 @@ dojo.declare(
                         // ctrl + y
                         this._specialKeyPressed = true;
                         evt.preventDefault();
-//                        var _redoStack = this._redoStack;
-//                        if(!_redoStack.length){ break; }
 						this.redo();
                         return;
                     }
@@ -876,7 +868,6 @@ dojo.declare(
             }
             
             if(!this._specialKeyPressed){ 
-//            if(this._caret.value.length!=0){ 
                 this.write(String.fromCharCode(resCode), true); 
             }
             dojo.stopEvent(evt); // prevent default action (opera) // to TEST!
@@ -1231,8 +1222,6 @@ dojo.declare(
         },
         attachEvents: function(){
             var node = document;
-//            var node = this._caret;
-            
             this._eventHandlers.push(dojo.connect(node, "onkeypress", this, "keyPressHandler"));
             this._eventHandlers.push(dojo.connect(node, "onkeyup", this, "keyUpHandler"));
         },
