@@ -176,6 +176,13 @@ dojo.declare(
             document.body.appendChild(this._clipboard);
             console.log("clipboard initialized");
         },
+		clearDocument: function(){
+			this.setCaretPosition(0, 0);
+			this.lines.innerHTML = "";
+			this.leftBand.getElementsByTagName("ol")[0].innerHTML = "";
+			this._addRowNumber({position: 1, rows:100});
+			this._initializeDoc();
+		},
         blur: function(){
             // to solve IE scroll problem; find another solution
 //            document.body.focus();
