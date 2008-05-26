@@ -107,7 +107,7 @@ dojo.declare(
             this.loadDictionary(this.colorsUrl, dojo.hitch(this, this._colorsFiller));
             this.linesCollection = this.lines.getElementsByTagName("div");
             this.setDimensions();
-            this.loadPlugins();
+            this.startPlugins();
             this._initializeInternals();
             this._initializeDoc();
             this._initializeClipboard();
@@ -174,7 +174,7 @@ dojo.declare(
             this._clipboard.style.width = "0";
             this._clipboard.style.height = "0";
             document.body.appendChild(this._clipboard);
-            console.log("clipboard initialized");
+//            console.log("clipboard initialized");
         },
 		clearDocument: function(){
 			this.setCaretPosition(0, 0);
@@ -1576,7 +1576,7 @@ dojo.declare(
 			if(!content){ return "" }
 			dojo.publish(this.id + "::massiveWrite");
 			var time1 = (new Date()).getTime()
-			console.log("massiveWrite " + (time1-time0) + "ms");
+//			console.log("massiveWrite " + (time1-time0) + "ms");
 			return {data: content, startCoords: startCoords};
 		},	
         massiveWrite: function(content){
@@ -1689,7 +1689,7 @@ dojo.declare(
 			if(!content){ return "" }
 			dojo.publish(this.id + "::massiveWrite");
 			var time1 = (new Date()).getTime()
-			console.log("massiveWrite " + (time1-time0) + "ms");
+//			console.log("massiveWrite " + (time1-time0) + "ms");
 			return {data: content, startCoords: startCoords};
         },
         // handles the single token colorization
@@ -1789,16 +1789,15 @@ dojo.declare(
 			dojo.stopEvent(evt);
 			evt.preventDefault();
         },
-        loadPlugins: function(){
+        startPlugins: function(){
             var plugins = this.plugins.split(" ");
             for(var i = 0; i < plugins.length; i++){
                 try{
                     if(plugins[i]){
-                        dojo.require("dojox.widget._codeTextArea.plugins." + plugins[i]);
                         dojox.widget._codeTextArea.plugins[plugins[i]].startup({source:this});
                     }
                 }catch(error){
-                    console.log("plugin \"" + plugins[i] + "\" not found");
+//                    console.log("plugin \"" + plugins[i] + "\" not found");
                 }                
             }
         },
