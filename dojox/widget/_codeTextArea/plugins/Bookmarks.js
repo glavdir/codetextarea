@@ -150,7 +150,7 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 	var leftBandMenu = new dijit.Menu({targetNodeIds: [source.leftBand.id], id:[source.leftBand.id] + "-menu"});
 
 	var onMenuOpen = function(e){
-		targetLine = parseInt((e.y - dojo.coords(source.domNode).y) / lineHeight);
+		targetLine = parseInt((e.y + source.domNode.scrollTop - dojo.coords(source.domNode).y) / lineHeight);
 		leftBandMenu.destroyDescendants();
 		var menuItem;
 		if(!hasBookmark(targetLine)){
