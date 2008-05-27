@@ -1240,8 +1240,9 @@ dojo.declare(
         },
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e);
-            var y = Math.min(parseInt(Math.max(0, evt.layerY) / this.lineHeight), this.numLines()-1);
-            var x = Math.min(parseInt(Math.max(0, evt.layerX) / this._caretWidth), this.getLineLength(y));
+			var coords = dojo.coords(this.domNode);
+            var y = Math.min(parseInt(Math.max(0, evt.clientY - coords.y + this.domNode.scrollTop) / this.lineHeight), this.numLines()-1);
+            var x = Math.min(parseInt(Math.max(0, evt.layerX + this.domNode.scrollLeft) / this._caretWidth), this.getLineLength(y));
             this.setCaretPosition(x, y);
         },
         createLine: function(){
