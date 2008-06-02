@@ -115,6 +115,7 @@ dojo.declare(
             this._initializeRange();
 			this._addRowNumber({position: 1, rows:100});
 			var _self = this;
+			// bottleneck with large documents
 	    	dojo.subscribe(this.id + "::addNewLine", dojo.hitch(this, _self._addRowNumber));
 	    	dojo.subscribe(this.id + "::removeLine", dojo.hitch(this, _self._removeRowNumber));
 			
@@ -1667,7 +1668,7 @@ dojo.declare(
 				// END new solution 09-23-2007
             } // end rows cycle
             
-			var _insertionPoint = this.y;
+			var _insertionPoint = this.y + 1;
             var newContent = _firstFragment + _parsedContent + _lastFragment;
             if(!dojo.isIE){
             	this.lines.innerHTML = newContent;
@@ -1678,7 +1679,7 @@ dojo.declare(
             	container.outerHTML = newContent;
             }
 
-			this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
+            dojo.publish(this.id + "::addNewLine", [{rows:_yIncrement, position:_insertionPoint, signum:1}]);
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
 
 			this._removeDelimiter(_delimiters[0]);
@@ -1844,29 +1845,11 @@ dojo.declare(
         	var _offset = root.getElementsByTagName("li").length + 1;
         	var _rows = "";
         	var _endCount = rowsToAdd.rows + _offset;
-        	for(var i = _offset; i < _endCount; i++){
-        		//_rows += "<div>"+i+"</div>";
-        		//_rows += "<li><div class='bookmarkPlaceholder'>B</div></li>";
-        		_rows += "<li></li>";
-        	}
-			var insertionPoint = rowsToAdd.position || 1;
-			var placeholder = document.createElement("ul");
-			
-			dojo.place(
-				placeholder, 
-				root.getElementsByTagName("li")[insertionPoint - 1],
-				this.x ? "after" : "before"
-			);
-        	var _content = root.innerHTML;
-			var _index;
-            _index = _content.indexOf("</ul>");
-            if(_index == -1){
-            	_index = _content.indexOf("</UL>"); // IE fix
-            }
-			var _firstFragment = _content.substring(0, _index - 4);
-			var _lastFragment = _content.substring(_index + 5);		
-			this.removeFromDOM(placeholder);	
-        	root.innerHTML = _firstFragment + _rows + _lastFragment;
+			var insertionPoint = rowsToAdd.position || 1;			
+			for(var i = 0; i < rowsToAdd.rows - 1; i++){
+				var number = document.createElement("li");
+				root.appendChild(number);
+			}
         }
 	}
 );

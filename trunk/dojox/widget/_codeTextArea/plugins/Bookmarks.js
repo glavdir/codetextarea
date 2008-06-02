@@ -17,10 +17,6 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
 		height = source.getHeight() + "px";
 	}
 
-//    dijit.placeOnScreenAroundElement(bookmarksBar, source.domNode, {'TR' : 'TL'});
-//	source.domNode.parentNode.appendChild(bookmarksBar);
-
-
 	// dialog
 	var _bookmarkDialogNode = document.createElement("div");
 	var _caption = document.createElement("span");
