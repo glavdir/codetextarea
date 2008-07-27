@@ -178,11 +178,11 @@ dojo.declare(
 //            console.log("clipboard initialized");
         },
 		clearDocument: function(){
-			this.setCaretPosition(0, 0);
 			this.lines.innerHTML = "";
 			this.leftBand.getElementsByTagName("ol")[0].innerHTML = "";
 			this._addRowNumber({position: 1, rows:100});
 			this._initializeDoc();
+			this.setCaretPosition(0, 0);
 		},
         blur: function(){
             // to solve IE scroll problem; find another solution
@@ -259,6 +259,12 @@ dojo.declare(
 		},
         numLines: function(){
             return this.linesCollection.length;
+        },
+        clearUndoHistory: function(){
+           	this._undoStack = [];
+           	this._undoStackIndex = -1;
+            this._lastEditCoords = {x:0, y:0};
+    		this._pushNextAction = false;
         },
         execCommand: function(command){
             var cmd = this.commands;
@@ -550,6 +556,7 @@ dojo.declare(
         },
 		// find a better name for this method
 		removeSelectionWithUndo: function(){
+			if(!this._range.startContainer){ return }; // ie
 			var startToken = this._range.startContainer.parentNode;
 			var endToken = this._range.endContainer.parentNode;
 			var startOffset = this._range.startOffset;
@@ -1618,6 +1625,8 @@ dojo.declare(
 						_currentChar = "&amp;";
 					}else if(_currentChar == "\t"){
 						_currentChar = "    ";
+					}else if(_currentChar == "\u00A0"){
+						_currentChar = " ";
 					}else if(_currentChar == "<"){
 						_currentChar = "&lt;";
 					}else if(_currentChar == ">"){
