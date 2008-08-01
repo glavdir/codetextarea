@@ -1,44 +1,269 @@
-#footer{
-	height:26px;
-	background:#ddd;
-	border-top:1px solid #999;
+html, body{
+	margin:0;
+	pading:0;
+	font:0.9em verdana,helvetica,sans;
+	color:#333;
+	background:#fff;
 }
-#menuBar{
-	background:#ddd;
-	border-bottom: 1px solid #999;
-	font: 12px arial;
-	color: black;
-	padding: 0 10px;
-	height:22px;
-	line-height:26px;
+span.not{
+	color:red;
 }
-#menuBar span{
-	text-transform: capitalize;
-	margin: 0 10px;
-}
-#footer #coords{
-	position:absolute;
-	border-top:1px solid #888;
-	border-right:1px solid #fff;
-	border-bottom:1px solid #fff;
-	border-left:1px solid #888;
-	right: 300px;
-	top:3px;
-	width:80px;
-	height:19px;
-	padding:0;
-	vertical-align:middle;
-}
-#footer #coords div{
+/* SPLASH start */
+#splashContainer{
+	position: absolute;
+	top:50%;
+	left:0;
+	width:100%;
+	height:200px;
+	margin-top:-100px;
 	text-align:center;
-	font:11px verdana;
-	margin-top:4px;
 }
-.keyword{
-	color:blue;
+div#splashContainer div.splash{
+	border:1px solid #ddd;
+	background:#ddd;
+	color:#fff;
+	background:#458;
+	height:200px;
+	width:400px;
+	margin:auto;
+	position:relative;
+	top:0;
+	left:0;
 }
-.constant{
-	color:green;
-	font-style:italic;/*mmm...*/
-	text-decoration:underline;
+div#splashContainer div.splash div#appName{
+	position:absolute;
+	top:20px;
+	left:0px;
+	width:100%;
+	text-align:center;
+	font:1.4em verdana,helvetica,sans;
+	color:white;
+}
+div#splashContainer div.splash div#appName span#version{
+	color:#ddd;
+}
+div#splashContainer div.splash .progressContainer #progress{
+	height:4px;
+	font-size:1px;
+	width:0px;
+	position:absolute;
+	top:0;
+	left:0;
+	background:yellow;
+}
+div#splashContainer div.splash .progressContainer{
+	position:absolute;
+	width:400px;
+	height:4px;
+	font-size:1px;
+	background:#347;
+	position:absolute;
+	bottom:1px;
+	left:0;
+}
+div#splashContainer div.splash .currentModule{
+	position: absolute;
+	width: 380px;
+	overflow:hidden;
+	left:20px;
+	bottom:30px;
+	font:0.8em verdana,helvetica,sans;
+	text-align:left;
+}
+/* SPLASH end */
+
+div.header{
+	position:relative;
+	top:0;
+	left:0;
+	font:1.2em verdana,helvetica,sans;
+	width:100%;
+	background:#fff;
+	color:#333;
+	height:70px;
+	display:block;
+	margin:0 0 20px 0;
+	/*border-bottom:1px solid #999;*/
+	background:#eee;
+}
+div.header h3{
+	margin:0;
+	position:absolute;
+	right:5px;
+	bottom:5px;
+}
+h3{
+	/*new*/
+	position:absolute;
+	top:38px;
+	left:30px;
+}
+table{
+	border:0;
+	border-collapse:collapse;
+}
+input, .dijitTextBox{
+	border:1px solid #999;
+	padding:4px;
+	font:0.9em verdana,helvetica,sans;
+}
+div.login{
+	float:left;
+	/*margin:75px 0 0 0;*/
+	position:absolute;
+	top:50%;
+	height:120px;
+	margin-top:-90px;
+	text-align:center;
+	width:300px;
+	width:100%;
+	/*padding:15px 0;*/
+	border-top:1px solid #999;
+	/*border-right:1px solid #999;*/
+	border-bottom:1px solid #999;
+	background:#fff;
+	/*new*/
+}
+div.login form table{
+	text-align:left;
+	margin: 10px auto;
+	height:100px;
+}
+div.login form table thead tr{
+	background:navy;
+	color:white;
+}
+div.login form table tbody tr.buttons td{
+	text-align:left;
+}
+div.login form table tbody tr.buttons td input{
+	margin:auto;
+}
+div.login form table tbody tr td{
+	text-align:right;
+}
+div.login form table tbody tr td label{
+	margin:0 5px 0 0;
+}
+div.content{
+	float:left;
+	margin:30px 0 0 20px;
+	width:500px;
+}
+/*div.footer{
+	position:absolute;
+	bottom:0;
+	left:0;
+	width:100%;
+	border-top:1px solid #999;
+	text-align:right;
+	font-size:0.7em;
+	height:50px;
+	vertical-align:middle;
+	display:inline-block;
+}*/
+div.author{
+	position:absolute;
+	bottom:0;
+	right:5px;
+}
+
+html, body, #main{	
+	width: 100%;	/* make the body expand to fill the visible window */
+	height: 100%;
+	overflow: hidden;	/* erase window level scrollbars */
+	padding: 0 0 0 0;
+	margin: 0 0 0 0;
+	font: 10pt Arial,Myriad,Tahoma,Verdana,sans-serif;
+}
+#innerContainer{
+	/*width: 500;
+	height: 300;*/
+	overflow: hidden;	/* erase window level scrollbars */
+	padding: 0 0 0 0;
+	margin: 0 0 0 0;
+	font: 10pt Arial,Myriad,Tahoma,Verdana,sans-serif;
+}
+div#tools{
+	position:absolute;
+	bottom:0;
+	right:0;
+	width:450px;
+	height:90px;
+	background:#fff;
+	border:1px solid #ddd;
+}
+div#tools{
+	height:90px;
+}
+div#tools div{
+	vertical-align:middle;
+	float:left;
+	height:90px;
+	line-height:100px;
+	width:150px;
+	text-align:center;
+}
+.signOn{
+	text-align:right;
+}
+.dojoCodeTextAreaHL{
+	width:100%;
+	background:red;
+	z-index:10;
+}
+/* about dialog*/
+div.about{
+	border-bottom:1px solid #ddd;
+	margin-bottom:20px;
+	padding-bottom:10px;
+}
+div.author{
+	text-align:right;
+	font-size:0.8em;
+}
+#aboutDialog_underlay, #keyAssistDialog_underlay{
+	opacity: 0.6;
+	background:black;
+}
+#menubar{
+	position: relative;
+}
+div.panel{
+	position:absolute;
+	right:5px;
+	bottom:0;
+}
+div.panel div{
+	float:left;
+	margin:0 15px;
+}
+
+/* notifier */
+div#notapad_notifier{
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	text-align:center;
+	background:none;
+	display:none;
+	z-index: 10;
+}
+div#notapad_notifier span{
+	margin:auto;
+	background:#f00;
+	color:#fff;
+	margin:auto;
+	text-align:center;
+	padding: 0 5px;
+}
+/* notifier end */
+/* export iframe*/
+iframe#exportiframe{
+	width:0;
+	height:0;
+	position:absolute;
+	top:-100px;
+	left:-100px;
 }
