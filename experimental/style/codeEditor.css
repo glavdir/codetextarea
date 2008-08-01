@@ -69,6 +69,7 @@
 	font-style:italic;
 	line-height:15px;
 }
-table, table tr, table tr td{
-	padding:0;
+.dojoCodeTextAreaLines .dijit{
+	color:#969033;
 }
+
