@@ -20,12 +20,13 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
                     _fromTo.appendChild(_fromLine);
 
                     var _toLine = document.createElement("span");
-                    _toLine.name = "toLine";
 					_toLine.className = "codeTextAreaDialogCaption";
                     _fromTo.appendChild(_toLine);
                     
                     var _line = document.createElement("input");
                     _line.type = "text";
+                    _line.value = "";
+                    _line.value = "goToLineField";
                     _goToLineDialogDomNode.appendChild(_fromTo);
                     _goToLineDialogDomNode.appendChild(_line);
 
@@ -59,11 +60,14 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
                     });
                     
                     dojo.connect(_dialog.domNode.getElementsByTagName("input")[0], "onkeypress", function(evt){
-                            var evt = dojo.fixEvent(evt||window.event);
+                            var evt = dojo.fixEvent(evt || window.event);
                             var errors = false; 
-                            var _value = parseInt(_dialog.domNode.getElementsByTagName("input")[0].value);
+                            var _value = parseInt(_dialog.domNode.getElementsByTagName("input")[0].value, 10);
                             
-                            if(evt.keyCode == 13){
+                            var keyCode = evt.keyCode;
+                            var charCode = evt.charCode;
+                            var resCode = keyCode || charCode;
+                            if(resCode == dojo.keys.ENTER){
                                 if(isNaN(_value)){
                                     _errors.innerHTML = "not a number";
                                     _errors.style.display = "block";
@@ -79,6 +83,7 @@ dojox.widget._codeTextArea.plugins.GoToLineDialog.startup = function(args){
                                     dojo.stopEvent(evt);
                                 }
                             }
+                            evt.stopPropagation();
                     });
                 }
 				source._blockedEvents = true;
