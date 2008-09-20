@@ -139,5 +139,6 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets.startup = function(args){
 	dojo.subscribe(source.id + "::CaretMove", setBracketColors);
 	dojo.subscribe(source.id + "::removeCharAtCaret", setBracketColors);
 	dojo.subscribe(source.id + "::documentParsed", makeBracketsList);
+    dojo.subscribe(source.id + "::viewportParsed", makeBracketsList);
 	dojo.subscribe(source.id + "::KeyPressed", gotoMatchingBracket);
 };
