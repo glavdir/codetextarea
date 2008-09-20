@@ -108,6 +108,7 @@ dojox.widget._codeTextArea.plugins.Bookmarks.startup = function(args){
             dojo.stopEvent(evt);
             document.body.focus();
         }
+        evt.stopPropagation();
     });
 	var hasBookmark = function(index){
 		var _hasBookmark = false;
