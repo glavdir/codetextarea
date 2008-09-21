@@ -1206,8 +1206,7 @@ dojo.declare(
             this.setCurrentTokenAtCaret({
                 lineHasChanged: lineHasChanged
             });
-            var t5 = (new Date()).getTime();
-            if(!noColor){ this.colorizeToken(this.currentToken); }
+            if(!noColor && this.currentToken.getAttribute("tokenType") != "paste-delimiter"){ this.colorizeToken(this.currentToken); }
 
             // scroll
 
@@ -1737,6 +1736,7 @@ dojo.declare(
 
 			this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
             var _delimiters = dojo.query(".dojoCodeTextAreaLines i");
+            
 			this.removeFromDOM(_delimiters[0]);
 			
             //this.moveCaretAtToken(_delimiters[1], 0);
