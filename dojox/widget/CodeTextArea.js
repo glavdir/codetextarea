@@ -1405,6 +1405,9 @@ dojo.declare(
                 // currentToken destroyed by the asynch parse
                 this.setCurrentTokenAtCaret();
             }
+            if(substCaret){ 
+                this.getSelection().collapse(); 
+            }
 			if(this.getSelection().getSelectedText().length){
 				this.removeSelectionWithUndo();
 			}
@@ -1458,7 +1461,7 @@ dojo.declare(
 					typeChange = true;
                     var firstText = _data.substring(0, this.caretIndex);
                     var lastText = _data.substring(this.caretIndex);
-                    if(firstText.length!=0){
+                    if(firstText.length != 0){
                         // first token
                         var newToken = document.createElement("span");
                         newToken.appendChild(document.createTextNode(firstText));
@@ -1722,7 +1725,6 @@ dojo.declare(
             } // end rows cycle
             //timeSplit1 = (new Date()).getTime();
             //window.alert("elapsed time: " + (timeSplit1 -timeSplit0));
-            
 			var _insertionPoint = this.y;
             var newContent = _firstFragment + _parsedContent + _lastFragment;
             if(!dojo.isIE){
