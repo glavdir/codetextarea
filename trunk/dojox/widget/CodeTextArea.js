@@ -981,9 +981,6 @@ dojo.declare(
 				    endCoords = undoObject.endCoords
 				;
 				this.setCaretPosition(endCoords.x, endCoords.y);
-//				for(var i in undoObject.data){
-//					console.log(i + " --> " + undoObject.data[i]);
-//				}
 				this.massiveWrite(undoObject.data);
 				this.setCaretPosition(selStartCoords.x, selStartCoords.y);
 				var startToken = this.currentToken,
@@ -1010,7 +1007,6 @@ dojo.declare(
 			    action = undoObject.action
 			;
 			if(action == "writeToken"){
-			    console.log(undoObject.data);
 				this.setCaretPosition(coords.x, coords.y);
 				this.writeToken(undoObject.data);
 				this.moveCaretBy(undoObject.data.length, 0);
@@ -1423,10 +1419,10 @@ dojo.declare(
                 // currentToken destroyed by the asynch parse
                 this.setCurrentTokenAtCaret();
             }
-            if(substCaret){ 
-                this.getSelection().collapse(); 
-            }
 			if(this.getSelection().getSelectedText().length){
+	            if(substCaret){ 
+	                this.getSelection().collapse(); 
+	            }
 				this.removeSelectionWithUndo();
 			}
 			var originalContent = content;
