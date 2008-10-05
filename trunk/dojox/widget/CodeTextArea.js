@@ -55,6 +55,7 @@ dojo.declare(
         lastCaretIndex: 0,
         colorsUrl: "",
         autocompleteUrl: "",
+		selectInProgress: false,
         _command: 0,
 		_blockedEvents: false,
         commands: {},
@@ -139,9 +140,42 @@ dojo.declare(
 				e.stopPropagation();
 				return false; 
 			});
-            dojo.connect(this.domNode, "onmouseup", this, "setCaretPositionAtPointer");
+            //dojo.connect(this.domNode, "onmouseup", this, "setCaretPositionAtPointer");
+            dojo.connect(this.domNode, "onmouseup", this, "mouseUpHandler");
+            dojo.connect(this.domNode, "onmousedown", this, "startSelection");
+//            dojo.connect(this.domNode, "onmousemove", this, "mouseMoveHandler");
+//            dojo.connect(document.body, "onselectstart", this, "startSelection"); // ie
             dojo.connect(this.domNode, "onclick", this, "blur");
             this.setCaretPosition(0, 0); 
+        },
+		mouseUpHandler: function(e){
+			this.selectInProgress = false;
+			this.setCaretPositionAtPointer(e);
+		},
+		mouseMoveHandler: function(e){
+			if(!this.selectInProgress){ return; }
+			var kwPar = {
+				token: this.currentToken,
+				index: this.caretIndex
+			};
+			this.setCaretPositionAtPointer(e);
+			this.addToSelection(kwPar);
+		},
+        startSelection: function(e){
+			if(this.getSelection().getSelectedText().length){
+				this.getSelection().collapse();
+			}
+			this.setCaretPositionAtPointer(e);
+			this.selectInProgress = true;
+//            dojo.stopEvent(e);
+//            e.preventDefault();
+            // selection
+            var evt = dojo.fixEvent(e),
+                coords = dojo.coords(this.domNode),
+                y = Math.min(parseInt(Math.max(0, evt.clientY - coords.y + this.domNode.scrollTop) / this.lineHeight), this.numLines()-1),
+                x = Math.min(parseInt(Math.max(0, evt.layerX + this.domNode.scrollLeft) / this._caretWidth), this.getLineLength(y))
+            ;
+//            return false;
         },
 		resize: function(args){
 			this.domNode.parentNode.style.width = args.w + "px";
@@ -235,7 +269,7 @@ dojo.declare(
         	data = this._expandAutoCompleteLinks(data);
             this.autocompleteDictionary = data;
         },
-        _expandAutoCompleteLinks: function(/*object literal*/ data){
+        _expandAutoCompleteLinks: function(/*Object*/ data){
         	if(data.links){
         		var links = data.links || [];
         		// foreach pair (link --> target)
@@ -423,7 +457,7 @@ dojo.declare(
 				return 1;
 			}
         },
-        addToSelection: function(/*Object literal*/ kwPar){
+        addToSelection: function(/*Object*/ kwPar){
 			// kwPar: oldToken, oldIndex
 			var oldToken = kwPar.token,
 			    oldIndex = kwPar.index,
@@ -503,12 +537,14 @@ dojo.declare(
         	this.setCaretPosition(this.getTokenX(token) + targetOffset, y);
         },
         removeSelection: function(){
+            console.log("remove selection 1");
 			if(dojo.doc["selection"]){
 				var _sel = dijit.range.getSelection(window);
 				this._range = _sel.getRangeAt(0);
 			}else{
 				this._range = dojo.global.getSelection().getRangeAt(0); // FF only
 			}
+			console.log("remove selection 2");
 			var selectedText = this.getSelectedText(),
 			    startToken = this._range.startContainer.parentNode,
 			    endToken = this._range.endContainer.parentNode,
@@ -588,6 +624,7 @@ dojo.declare(
         },
 		// find a better name for this method
 		removeSelectionWithUndo: function(){
+            var sel = document.selection || document.getSelection();
 			if(!this._range.startContainer){ return }; // ie
 			var startToken = this._range.startContainer.parentNode,
 			    endToken = this._range.endContainer.parentNode,
@@ -925,7 +962,7 @@ dojo.declare(
         removeRedoHistory: function(){
             this._undoStack.length = this._undoStackIndex + 1;
         },
-        pushIntoUndoStack: function(/*object literal*/ undoObject){
+        pushIntoUndoStack: function(/*object*/ undoObject){
 			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
@@ -1340,7 +1377,6 @@ dojo.declare(
 					if(this._pushNextAction ||
 						!this._undoStack.length 
 						|| changes.typeChange
-						|| this.caretIndex == 0
 						|| this._undoStack[this._undoStack.length - 1].action != "writeToken" 
 						|| this.x != this._lastEditCoords.x || this.y != this._lastEditCoords.y){
 						this.pushIntoUndoStack({action: "writeToken", data: changes.data, coords: {x: this.x, y: this.y}});		
@@ -1391,7 +1427,7 @@ dojo.declare(
         getLineTerminator: function(){
             return this._lineTerminator.cloneNode(true);
         },
-        matchSymbol: function(/*Object literal*/ kwPar){
+        matchSymbol: function(/*Object*/ kwPar){
             var tokenType = kwPar.def,
                 _currentChar = kwPar.currentChar,
                 i = 0
@@ -1805,7 +1841,7 @@ dojo.declare(
             if(!_items){ this._preventLoops = true; this.attachEvents(); return; }
             this.createPopup(_items);
         },
-        createPopup: function(/* object literal */ items){
+        createPopup: function(/*Object */ items){
             var _items = [];
             for(var i in items){
                 _items.push({ value: i, name: i });
