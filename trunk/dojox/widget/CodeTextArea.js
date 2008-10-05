@@ -1362,7 +1362,6 @@ dojo.declare(
             return newLine;
         },
         writeLine: function(/*String*/ text, /*Boolean*/ moveCaret, /*Boolean*/ noUndo){
-            t2 = (new Date()).getTime();
             if(!text){ return; }
 //            var tokens = text.match(/\S+|\s+/g);            
             //var tokens = text.match(/\.+|[\S+|\s+]/g);            
