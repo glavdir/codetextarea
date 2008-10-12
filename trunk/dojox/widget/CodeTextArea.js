@@ -67,6 +67,12 @@ dojo.declare(
         _targetToken: null,
         _preventLoops: false,
 
+		// selection 08 oct
+		selectionStartNode: null,
+		selectionStartIndex: null,
+		selectionEndNode: null,
+		selectionEndIndex: null,
+
 		// undo vars
        	_undoStack: [],
        	_undoStackIndex: -1,
@@ -151,6 +157,19 @@ dojo.declare(
 		mouseUpHandler: function(e){
 			this.selectInProgress = false;
 			this.setCaretPositionAtPointer(e);
+			if(this.selectionStartNode || this.getSelection().getSelectedText().length){
+				this.selectionEndNode = this.currentToken;
+				this.selectionEndIndex = this.caretIndex;
+				this._range.detach();
+	            this._range = dijit.range.create();
+				this._range.setStart(this.selectionStartNode.firstChild, this.selectionStartIndex);
+				this._range.setEnd(this.selectionEndNode.firstChild, this.selectionEndIndex);
+			}else{
+				this.selectionStartNode = null;
+				this.selectionStartIndex = 0;
+				this.selectionEndNode = null;
+				this.selectionEndIndex = 0;
+			}
 		},
 		mouseMoveHandler: function(e){
 			if(!this.selectInProgress){ return; }
@@ -162,20 +181,12 @@ dojo.declare(
 			this.addToSelection(kwPar);
 		},
         startSelection: function(e){
-			if(this.getSelection().getSelectedText().length){
-				this.getSelection().collapse();
-			}
+			this.selectionStartNode = null;
+			this.selectionStartIndex = 0;
 			this.setCaretPositionAtPointer(e);
 			this.selectInProgress = true;
-//            dojo.stopEvent(e);
-//            e.preventDefault();
-            // selection
-            var evt = dojo.fixEvent(e),
-                coords = dojo.coords(this.domNode),
-                y = Math.min(parseInt(Math.max(0, evt.clientY - coords.y + this.domNode.scrollTop) / this.lineHeight), this.numLines()-1),
-                x = Math.min(parseInt(Math.max(0, evt.layerX + this.domNode.scrollLeft) / this._caretWidth), this.getLineLength(y))
-            ;
-//            return false;
+			this.selectionStartNode = this.currentToken;
+			this.selectionStartIndex = this.caretIndex;
         },
 		resize: function(args){
 			this.domNode.parentNode.style.width = args.w + "px";
@@ -394,6 +405,23 @@ dojo.declare(
         _initializeRange: function(){
             this._range = dijit.range.create();
         },
+		// two methods from quirksmode.org
+		getUserSelection: function(){
+			var us = window.getSelection ? window.getSelection() : document.selection.createRange();
+			return us;
+		},
+		getRange: function(selection){
+			if(selection.getRangeAt){
+				window.alert("getRangeIE");
+				return selection.getRangeAt(0);
+			}else if(document.createRange){ // Safari!
+				window.alert("others");
+				var range = document.createRange();
+				range.setStart(selection.anchorNode,selection.anchorOffset);
+				range.setEnd(selection.focusNode,selection.focusOffset);
+				return range;
+			}
+		},
         getSelection: function(){
         	return dijit._editor.selection;
         },
@@ -537,14 +565,14 @@ dojo.declare(
         	this.setCaretPosition(this.getTokenX(token) + targetOffset, y);
         },
         removeSelection: function(){
-            console.log("remove selection 1");
+//            console.log("remove selection 1");
 			if(dojo.doc["selection"]){
 				var _sel = dijit.range.getSelection(window);
 				this._range = _sel.getRangeAt(0);
 			}else{
 				this._range = dojo.global.getSelection().getRangeAt(0); // FF only
 			}
-			console.log("remove selection 2");
+//			console.log("remove selection 2");
 			var selectedText = this.getSelectedText(),
 			    startToken = this._range.startContainer.parentNode,
 			    endToken = this._range.endContainer.parentNode,
@@ -623,8 +651,11 @@ dojo.declare(
 			return {data:selectedText}
         },
 		// find a better name for this method
-		removeSelectionWithUndo: function(){
-            var sel = document.selection || document.getSelection();
+			removeSelectionWithUndo: function(){
+//			console.log(dojo.global.getSelection());
+//			window.alert(this.getUserSelection());
+//			this._range = this.getRange(this.getUserSelection());
+			
 			if(!this._range.startContainer){ return }; // ie
 			var startToken = this._range.startContainer.parentNode,
 			    endToken = this._range.endContainer.parentNode,
@@ -1597,6 +1628,11 @@ dojo.declare(
 			    cDict = this.colorsDictionary,
 			    _previousType = _currentType = _workingToken = _unparsedToken = _rowText = parsedLine = ""
 			;
+			if(dojo.attr(line, "parsed")){
+				return;
+			}else{
+				dojo.attr(line, "parsed", "true");
+			}
 			for(var k = 0; k < lineContent.length; k++){
 				// token classification
 				var _currentChar = lineContent.charAt(k),
