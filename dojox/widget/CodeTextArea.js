@@ -40,7 +40,7 @@ dojo.declare(
         _lineTerminator: null,
         
         /* parser */
-        rowsToParse: 100,
+        rowsToParseAtOnce: 100,
         parserInterval: 500,
         parsedRows: 0,
         parserTimeout: null,
@@ -1221,7 +1221,7 @@ dojo.declare(
             var _currentLine = this.currentLine,
                 y = this.y
             ;
-            if(y<this.numLines()-1){
+            if(y < this.numLines() - 1){
                 var _nextLine = this.getLine(y + 1),
                     _nextElement = _nextLine.firstChild
                 ;
@@ -1628,7 +1628,7 @@ dojo.declare(
 			    cDict = this.colorsDictionary,
 			    _previousType = _currentType = _workingToken = _unparsedToken = _rowText = parsedLine = ""
 			;
-			if(dojo.attr(line, "parsed")){
+			if(dojo.attr(line, "parsed") && !args.force){
 				return;
 			}else{
 				dojo.attr(line, "parsed", "true");
@@ -1695,46 +1695,46 @@ dojo.declare(
 			line.appendChild(this.getLineTerminator());
 		},
 		parseDocument: function(args){
-		    this.parsedRows = 0;
-			var lines = this.linesCollection,
-			    asynch = args.asynch || false
+			this.parseFragment({ startLine: 0, endLine: this.linesCollection.length - 1, asynch: args.asynch || false });
+		},
+		parseFragment: function(args){
+			var startLine = args.startLine,
+				endLine = args.endLine,
+				asynch = args.asynch || false
 			;
 			if(asynch){
 			    var self = this,
-			        linesCollection = this.linesCollection
+			        linesCollection = this.linesCollection,
+					rowsToParse = endLine - startLine
 			    ;
-    			dojo.publish(this.id + "::startParse", [{rowsToParse: linesCollection.length}]);
+				console.log(endLine);
+    			dojo.publish(this.id + "::startParse", [{ rowsToParse: rowsToParse }]);
 			    this.parserTimeout = setTimeout(function(){
 			        var parsedRows = self.parsedRows,
-			            limit = Math.min(self.rowsToParse, linesCollection.length - parsedRows)
+			            limit = Math.min(self.rowsToParseAtOnce, rowsToParse - parsedRows)
 			        ;
 			        for(var i = 0; i < limit; i++){
-			            self.parseLine({lineIndex: parsedRows++});
+			            self.parseLine({ lineIndex: parsedRows++ });
 			        }
-        			dojo.publish(self.id + "::parseBlock", [{parsedRows: parsedRows}]);
-			        if(parsedRows < self.linesCollection.length){
+        			dojo.publish(self.id + "::parseBlock", [{ parsedRows: parsedRows }]);
+			        if(parsedRows < rowsToParse){
 			            self.parserTimeout = setTimeout(arguments.callee, self.parserInterval);
 			        }else{
-            			dojo.publish(self.id + "::documentParsed");
+            			dojo.publish(self.id + "::fragmentParsed");
 			        }
 			        self.parsedRows = parsedRows;
 			    }, this.parserInterval);
 			}else{
-    			for(i = lines.startLine; i <= lines.endLine; i++){
+    			for(i = startLine; i <= endLine; i++){
     				this.parseLine({lineIndex: i});
     			}
-			}
-		},
-		parseFragment: function(startLine, endLine){
-			for(var i = startLine; i <= endLine; i++){
-				this.parseLine({lineIndex: i});
 			}
 		},
 		parseViewport: function(args){
 			var lines = this.getViewPort(),
 			    endLine = lines.endLine
 			;
-			this.parseFragment(lines.startLine, lines.endLine);
+			this.parseFragment({ startLine: lines.startLine, endLine: lines.endLine });
 			dojo.publish(this.id + "::viewportParsed");
 			
 		},
@@ -1830,7 +1830,8 @@ dojo.declare(
             var nextY = rowsNum - 1,
                 nextX = nextY ? rowLen - this.x : rowLen
             ;
-            this.parseLine({lineIndex: nextY});
+            this.parseLine({ lineIndex: this.y, force: true });
+            this.parseLine({ lineIndex: this.y + nextY, force: true });
             this.moveCaretBy(nextX, nextY);
 			//this._removeDelimiter(_delimiters[1]);
 
