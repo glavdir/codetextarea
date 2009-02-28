@@ -4,6 +4,7 @@ html, body{
 	font:0.9em verdana,helvetica,sans;
 	color:#333;
 	background:#fff;
+	background: #999;
 }
 span.not{
 	color:red;
@@ -19,10 +20,13 @@ span.not{
 	text-align:center;
 }
 div#splashContainer div.splash{
-	border:1px solid #ddd;
-	background:#ddd;
+	border-bottom:1px solid #666;
+	border-right:1px solid #666;
+	border-top:1px solid #999;
+	border-left:1px solid #999;
 	color:#fff;
-	background:#458;
+	background: #fff url("/images/not_logo.png") no-repeat 30px 30px;
+	color:#333;
 	height:200px;
 	width:400px;
 	margin:auto;
@@ -32,15 +36,16 @@ div#splashContainer div.splash{
 }
 div#splashContainer div.splash div#appName{
 	position:absolute;
-	top:20px;
-	left:0px;
+	top:50px;
+	left:20px;
 	width:100%;
 	text-align:center;
 	font:1.4em verdana,helvetica,sans;
-	color:white;
+	color:#333;
+	font-weight: bold;
 }
 div#splashContainer div.splash div#appName span#version{
-	color:#ddd;
+	color:#333;
 }
 div#splashContainer div.splash .progressContainer #progress{
 	height:4px;
@@ -49,17 +54,18 @@ div#splashContainer div.splash .progressContainer #progress{
 	position:absolute;
 	top:0;
 	left:0;
-	background:yellow;
+	background:red;
 }
 div#splashContainer div.splash .progressContainer{
 	position:absolute;
 	width:400px;
 	height:4px;
 	font-size:1px;
-	background:#347;
+	background:#663333;
 	position:absolute;
 	bottom:1px;
 	left:0;
+	overflow:hidden;
 }
 div#splashContainer div.splash .currentModule{
 	position: absolute;
@@ -266,4 +272,15 @@ iframe#exportiframe{
 	position:absolute;
 	top:-100px;
 	left:-100px;
+}
+/* dialogs */
+#mvDialog_underlay{
+	background: #000;
+}
+#buildInfo{
+	position:absolute;
+	bottom:20px;
+	right:20px;
+	font:1.0em verdana,helvetica,sans;
+	color:#ccc;
 }
