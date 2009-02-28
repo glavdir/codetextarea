@@ -39,7 +39,11 @@ table.dojoCodeTextAreaWrapper tr, table.dojoCodeTextAreaWrapper tr td{
 	margin:0;
 }
 .dojoCodeTextAreaBand ol li{
-	margin: 0 0 0 30px;
+    margin: 0 0 0 30px;
+    border:0;
+    padding-bottom: 0;
+    /*IE trick...*/
+    .padding-bottom: 1px;
 }
 .dojoCodeTextAreaBand div.bookmark{
 	position:absolute;
@@ -51,8 +55,9 @@ table.dojoCodeTextAreaWrapper tr, table.dojoCodeTextAreaWrapper tr td{
 .codeTextAreaLine{
 	position:relative;
 	top:0;
-	left.0;
+	left:0;
 	font:13px monospace;
+	white-space: nowrap;
 }
 .codeTextAreaLine span{
 	height:13px;
@@ -67,6 +72,7 @@ pre{
 	width:100%;
 	background:#ddf;
 	z-index:10;
+    height:17px;
 }
 .dojoCodeTextAreaLines{
 	z-index:100;
@@ -83,7 +89,7 @@ pre{
 	position:absolute;
 	top:0;
 	left:0;
-	backgroundColor:transparent;
+	background-color:transparent;
 	color:#c6ffc6;
 	border-left:2px solid black;
 }

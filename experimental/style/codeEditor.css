@@ -8,6 +8,13 @@
 	border-top:1px solid #999;
 	z-index:20;
 }
+#footer #parserBar{
+	position:absolute;
+	top:0;
+	right:400px;
+	width:200px;
+}
+
 #footer #coords{
 	position:absolute;
 /*	border-top:1px solid #888;
@@ -25,6 +32,21 @@
 	text-align:center;
 	font:11px verdana;
 	margin-top:4px;
+}
+.dojoCodeTextAreaLines .startBlockComment{
+	color:#090;
+	font-weight:normal;
+	line-height:17px;
+}
+.dojoCodeTextAreaLines .endBlockComment{
+	color:#090;
+	font-weight:normal;
+	line-height:17px;
+}
+.dojoCodeTextAreaLines .quotes{
+	color:#930;
+	font-weight:normal;
+	/*line-height:17px;*/
 }
 .dojoCodeTextAreaLines .browser{
 	color:#00c;
