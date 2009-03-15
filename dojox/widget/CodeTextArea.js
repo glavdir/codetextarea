@@ -39,7 +39,7 @@ dojo.declare(
         _clipboard: null,
         _range: null,
         _lineTerminator: null,
-        
+        _eventsAttached: false,
         /* parser */
         rowsToParseAtOnce: 50,
         parserInterval: 500,
@@ -267,10 +267,10 @@ dojo.declare(
 //            dojo.connect(this.domNode, "onmousemove", this, "mouseMoveHandler");
 //            dojo.connect(document.body, "onselectstart", this, "startSelection"); // ie
             dojo.connect(this.domNode, "onclick", this, "blur");
-            dojo.connect(this.domNode, "onblur", this, "_onNodeBlur");
-            dojo.connect(this.domNode, "onfocus", this, "_onNodeFocus");
+//            dojo.connect(this.domNode, "onblur", this, "_onNodeBlur");
+//            dojo.connect(this.domNode, "onfocus", this, "_onNodeFocus");
             dojo.connect(this.domNode, "onclick", this, "onClick");
-            this.setCaretPosition(0, 0); 
+            this.setCaretPosition(0, 0);
         },
 		mouseUpHandler: function(e){
 			this.selectInProgress = false;
@@ -1344,7 +1344,6 @@ dojo.declare(
             this.write("    ", true);
         },
 		_hideCaret: function(){
-//			console.log("hide caret")
 			dojo.style(
 				this.caret,
 				{
@@ -1353,7 +1352,6 @@ dojo.declare(
 			);
 		},
 		_showCaret: function(){
-//			console.log("show caret")
 			dojo.style(
 				this.caret,
 				{
@@ -1434,7 +1432,7 @@ dojo.declare(
                 _tokensToMove = []
             ;
             while(_token){
-                if(_token.getAttribute("tokenType")=="line-terminator"){ break; }
+                if(_token.getAttribute("tokenType") == "line-terminator"){ break; }
                 _tokensToMove.push(_token);
                 _token = _token.nextSibling;
             }
@@ -1464,21 +1462,18 @@ dojo.declare(
         moveCaretBy: function(/*int*/ x, /*int*/ y){
             this.setCaretPosition(this.x + x, this.y + y);
         },
-        setCaretPosition: function(/*int*/ x, /*int*/ y, /*boolean*/ noColor){
+        setCaretPosition: function(/*int*/ x, /*int*/ y){
             this.caret.style.left = x*this._caretWidth + "px";
             this.x = x;
             var _xPx = x * this._caretWidth,
                 _yPx = y * this.lineHeight,
-                lineHasChanged = this.y !== y
+                lineChanged = this.y !== y
             ;
             this.currentLineHighLight.style.top = _yPx + "px";
             this.y = y;
             this.setCurrentTokenAtCaret({
-                lineHasChanged: lineHasChanged
+                lineChanged: lineChanged
             });
-//			window.alert("before noColor")
-//            if(!noColor && this.currentToken.getAttribute("tokenType") != "paste-delimiter"){ this.colorizeToken(this.currentToken); }
-//			window.alert("before noColor")
 
             // scroll
 
@@ -1518,7 +1513,7 @@ dojo.declare(
             // find the currentToken
 
             // workaround for a IE performance issue
-            if(args && args.lineHasChanged){
+            if(args && args.lineChanged){
                 this.currentLine = this.linesCollection[this.y];
             }
             var tokens = this.currentLine.getElementsByTagName("span");
@@ -1541,6 +1536,18 @@ dojo.declare(
         getCaretPosition: function(){
             return {x: this.x, y: this.y};
         },
+	    onFocus: function(){
+			this.attachEvents();
+		    this.inherited(arguments);
+		    this._showCaret();
+			// re-read the current line
+		    this.currentLine = this.linesCollection[this.y];
+	    },
+	    onBlur: function(){
+			this.detachEvents();  
+		    this.inherited(arguments);
+		    this._hideCaret();
+	    },
         setDimensions: function(){
 			var coords = dojo.coords(this.domNode);
             this._caretWidth = dojo.contentBox(this.caret).w;
@@ -1549,21 +1556,29 @@ dojo.declare(
             this.height = coords.h;
         },
         attachEvents: function(){
+	        if(this._eventsAttached){
+		        return;
+	        }
             var node = this.tArea; //document;
             this._eventHandlers.push(dojo.connect(node, "onkeypress", this, "keyPressHandler"));
             this._eventHandlers.push(dojo.connect(node, "onkeyup", this, "keyUpHandler"));
             this._eventHandlers.push(dojo.connect(this.domNode, "onscroll", this, "scrollHandler"));
-            this._eventHandlers.push(dojo.connect(document, "onfocus", this, "docFocusHandler"));
-        },
-        docFocusHandler: function(evt){
-            console.log("target" + evt.target);
+//            this._eventHandlers.push(dojo.connect(document, "onfocus", this, "docFocusHandler"));
+	        this._eventsAttached = true;
         },
         detachEvents: function(){
+	        if(!this._eventsAttached){
+		        return;
+	        }
             for(var i = 0; i < this._eventHandlers.length; i++){
                 dojo.disconnect(this._eventHandlers[i]);
             }
             this._eventHandlers.length = 0;
+	        this._eventsAttached = false;
         },
+	    docFocusHandler: function(evt){
+	        console.log("target" + evt.target);
+	    },
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e),
 			    coords = dojo.coords(this.domNode),
@@ -2129,8 +2144,8 @@ dojo.declare(
 			//this._removeDelimiter(_delimiters[1]);
 
 			this.currentToken = _savedCurrentToken;
-			// lineHasChanged = true force the currentLine re-read
-			this.setCurrentTokenAtCaret({ lineHasChanged: true });
+			// lineChanged = true force the currentLine re-read
+			this.setCurrentTokenAtCaret({ lineChanged: true });
 			if(!content){ return "" }
 			dojo.publish(this.id + "::massiveWrite");
 			var time1 = (new Date()).getTime();
