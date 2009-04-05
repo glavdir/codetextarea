@@ -1142,7 +1142,6 @@ dojo.declare(
             this._undoStack.length = this._undoStackIndex + 1;
         },
         pushIntoUndoStack: function(/*object*/ undoObject){
-	        console.log("push into undo stack")
 			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
@@ -1151,6 +1150,7 @@ dojo.declare(
         undo: function(){
 			this.clearSelection();
 			var undoStack = this._undoStack;
+	        console.log(this._undoStackIndex)
 	        if(!undoStack.length || this._undoStackIndex < 0){
 				// nothing to (un)do
 				return;
