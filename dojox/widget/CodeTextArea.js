@@ -1142,6 +1142,7 @@ dojo.declare(
             this._undoStack.length = this._undoStackIndex + 1;
         },
         pushIntoUndoStack: function(/*object*/ undoObject){
+	        console.log("push into undo stack")
 			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
@@ -1150,14 +1151,14 @@ dojo.declare(
         undo: function(){
 			this.clearSelection();
 			var undoStack = this._undoStack;
-        	if(!undoStack.length || this._undoStackIndex < 0){ 
+	        if(!undoStack.length || this._undoStackIndex < 0){
 				// nothing to (un)do
-				return; 
-			} 
+				return;
+			}
 			this._pushNextAction = true;
 			var undoObject = undoStack[this._undoStackIndex], // pop! (1)
-			    action = undoObject.action,
-			    coords = undoObject.coords
+				action = undoObject.action,
+				coords = undoObject.coords
 			;
 			if(undoObject.action == "writeToken"){
 				var charsToRemove = undoObject.data.length;
@@ -1209,11 +1210,13 @@ dojo.declare(
 			if(undoStack.length){
 				this._undoStackIndex--; // pop! (2)
 			}
+			// 04/apr/2009
+	        this._lastEditCoords = { x: this.x, y: this.y };
         },
         redo: function(){
 			this.clearSelection();
 			var undoStack = this._undoStack;
-        	if(!undoStack.length || /*this._undoStackIndex < 0 ||*/ this._undoStackIndex == undoStack.length - 1){ 
+        	if(!undoStack.length || /*this._undoStackIndex < 0 ||*/ this._undoStackIndex == undoStack.length - 1){
 				//nothing to (re)do
 				return; 
 			}
@@ -1278,8 +1281,6 @@ dojo.declare(
 			var rowsNumCount = this._getRowNumbersCount(),
 				rowsCount = this.linesCollection.length
 			;
-//			console.log("nums: " + rowsNumCount);
-//			console.log("rows: " + rowsCount);
 			if(rowsNumCount < rowsCount){
 				this._addRowNumber({position: 1, rows: rowsCount - rowsNumCount });
 			}
@@ -1577,7 +1578,6 @@ dojo.declare(
 	        this._eventsAttached = false;
         },
 	    docFocusHandler: function(evt){
-	        console.log("target" + evt.target);
 	    },
         setCaretPositionAtPointer: function(e){
             var evt = dojo.fixEvent(e),
@@ -1936,7 +1936,6 @@ dojo.declare(
 				// tText: tokenized text
 				tText = this.tokenizeWords(pText)
 			;
-//            console.log("nText is: " + nText);
 			line.innerHTML = tText;
 			var words = dojo.query("[tokenType$=word]", line),
 				word = ""
@@ -2027,7 +2026,7 @@ dojo.declare(
                 changes = this.massiveWrite(content),
                 actualTokens = currentLine.childNodes.length
             ;
-            if(!this._undoStack.length 
+            if(!this._undoStack.length
                 || (fromLastCoords && actualTokens != tokens)
                 || (this._undoStack[this._undoStack.length - 1].action != "writeToken") ){
                 this.pushIntoUndoStack({action: "writeToken", data: changes.data, coords: {x: x, y: y}});
