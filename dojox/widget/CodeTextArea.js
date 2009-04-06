@@ -1150,7 +1150,6 @@ dojo.declare(
         undo: function(){
 			this.clearSelection();
 			var undoStack = this._undoStack;
-	        console.log(this._undoStackIndex)
 	        if(!undoStack.length || this._undoStackIndex < 0){
 				// nothing to (un)do
 				return;
