@@ -15,7 +15,7 @@ dojo.declare(
     "dojox.widget.CodeTextArea",
 	[dijit._Widget, dijit._Templated],
     {
-		templatePath: dojo.moduleUrl("dojox.widget", "CodeTextArea/CodeTextArea.html"),
+	templatePath: dojo.moduleUrl("dojox.widget", "CodeTextArea/CodeTextArea.html"),
         isContainer: true,
 
         // parameters
