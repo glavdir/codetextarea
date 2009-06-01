@@ -15,7 +15,7 @@ dojo.declare(
     "dojox.widget.CodeTextArea",
 	[dijit._Widget, dijit._Templated],
     {
-	templatePath: dojo.moduleUrl("dojox.widget", "CodeTextArea/CodeTextArea.html"),
+		templatePath: dojo.moduleUrl("dojox.widget", "CodeTextArea/CodeTextArea.html"),
         isContainer: true,
 
         // parameters
@@ -818,23 +818,43 @@ dojo.declare(
                 this._preventLoops = false;
                 return;
             }
-            this._specialKeyPressed = true;//IE
-            evt = dojo.fixEvent(evt || window.event);
+            this._specialKeyPressed = true; //IE
+	        evt = dojo.fixEvent(evt || window.event);
             dojo.publish(this.id + "::KeyPressed", [{ source: this,evt: evt }]);
             var keyCode = evt.keyCode,
                 charCode = evt.charCode,
-            //console.debug("2-> charCode/keyCode: "+evt.charCode+"/"+evt.keyCode);
                 dk = dojo.keys,
                 x = this.x,
                 y = this.y,
+                h,
                 lines = this.linesCollection,
                 resCode = charCode || keyCode,
                 cmd = this.commands
             ;
+//	        console.log("2-> charCode/keyCode: "+evt.charCode+"/"+evt.keyCode);
             switch(resCode){
             	case 0:
             		// ALT-GR
             	break;
+                case dk.PAGE_UP:
+	                if(charCode == 0){
+						h = this.getHeight();
+						this.setCaretPosition(x, Math.max(0, y - parseInt(h / this.lineHeight)));
+						dojo.stopEvent(evt);
+	                }else{
+	                    // !
+	                    this._specialKeyPressed = false;
+	                }
+                break;
+                case dk.PAGE_DOWN:
+	                if(charCode == 0){
+						h = this.getHeight();
+						this.setCaretPosition(x, Math.min(this.numLines() - 1, y + parseInt(h / this.lineHeight)));
+						dojo.stopEvent(evt);
+	                }else{
+	                    this._specialKeyPressed = false;
+	                }
+	            break;
                 case dk.ESCAPE:
                 break;
                 case dk.BACKSPACE:
@@ -982,7 +1002,7 @@ dojo.declare(
                             dojo.stopEvent(evt);
                             return;
                         }
-                        lineLength = this.getLineLength(y-1);
+                        var lineLength = this.getLineLength(y-1);
 						var kwPar = {
 							token: this.currentToken,
 							index: this.caretIndex
@@ -1142,6 +1162,7 @@ dojo.declare(
             this._undoStack.length = this._undoStackIndex + 1;
         },
         pushIntoUndoStack: function(/*object*/ undoObject){
+//	        console.log("push into undo stack")
 			this._pushNextAction = false;
            	this.removeRedoHistory();
            	this._undoStack.push(undoObject);
@@ -1150,6 +1171,7 @@ dojo.declare(
         undo: function(){
 			this.clearSelection();
 			var undoStack = this._undoStack;
+//	        console.log(this._undoStackIndex)
 	        if(!undoStack.length || this._undoStackIndex < 0){
 				// nothing to (un)do
 				return;
@@ -1850,6 +1872,17 @@ dojo.declare(
         	if(!target || !target.parentNode){ return };
             target.parentNode.removeChild(target);
         },
+	    parseText: function(text){
+		    var
+			    // nText: normalized text
+			    nText = this.normalizeText(text),
+			    // pText: partially tokenized
+			    pText = this._matchSymbols(nText),
+			    // tText: tokenized text
+			    tText = this.tokenizeWords(pText)
+		    ;
+		    return tText;
+	    },
 		parseLine: function(args){
 			var lineIndex = args.lineIndex,
 			    line = this.linesCollection[lineIndex],
@@ -1927,14 +1960,15 @@ dojo.declare(
 //					_previousType = _currentType;
 //				}
 //			}
-			var
-				// nText: normalized text
-				nText = this.normalizeText(lineContent),
-				// pText: partially tokenized
-				pText = this._matchSymbols(nText),
-				// tText: tokenized text
-				tText = this.tokenizeWords(pText)
-			;
+//			var
+//				// nText: normalized text
+//				nText = this.normalizeText(lineContent),
+//				// pText: partially tokenized
+//				pText = this._matchSymbols(nText),
+//				// tText: tokenized text
+//				tText = this.tokenizeWords(pText)
+//			;
+			var tText = this.parseText(lineContent);
 			line.innerHTML = tText;
 			var words = dojo.query("[tokenType$=word]", line),
 				word = ""
@@ -2029,6 +2063,10 @@ dojo.declare(
                 || (fromLastCoords && actualTokens != tokens)
                 || (this._undoStack[this._undoStack.length - 1].action != "writeToken") ){
                 this.pushIntoUndoStack({action: "writeToken", data: changes.data, coords: {x: x, y: y}});
+	            var token = this.previousToken,
+	                tokenType = token ? dojo.attr(this.previousToken, "tokenType") : null
+		        ;
+	            dojo.publish(this.id + "::newToken", [{ token: token, tokenType: tokenType }]);
             }else{
                 this._undoStack[this._undoStack.length - 1].data += changes.data;
             }
@@ -2046,7 +2084,7 @@ dojo.declare(
 			var time2 = (new Date()).getTime();
 //			console.log("elapsed time2: " + (time2-time1));
 			var startCoords = { x: this.x, y: this.y },
-			// IE doesn't handle correctly split used with a regexp. Love this browser :-I
+			// IE doesn't handle correctly split used with a regexp.
                 content = content.replace(/\n\r|\r\n|\r|\n/g, "\n"),
 //                rows = content.split(/\n\r|\r\n|\r|\n/),
                 rows = content.split("\n"),
@@ -2059,7 +2097,7 @@ dojo.declare(
             var _initialContent = rowsNum > 1 ? this.lines.innerHTML : this.getContent(this.currentLine),
                 _index = rowsNum > 1 ? this._getTextDelimiter(_initialContent) : this.x,
                 target = rowsNum > 1 ? this.lines : this.currentLine,
-                _firstFragment = _initialContent.substring(0, _index),
+                _firstFragment = rowsNum > 1 ? _initialContent.substring(0, _index) : this.parseText(_initialContent.substring(0, _index)),
                 _lastFragment = _initialContent.substring(_index),
                 _parsedContent = "",
                 timeSplit0, timeSplit1,
@@ -2080,8 +2118,9 @@ dojo.declare(
 				rowLen = row.length;
 				for(var k = 0; k < rowLen; k++){
 					// token classification
-					var _currentChar = row.charAt(k);
-					var _oldChar = _currentChar;
+					var _currentChar = row.charAt(k),
+						_oldChar = _currentChar
+					;
 					// html START
 					if(_currentChar == "&"){
 						_currentChar = "&amp;";
