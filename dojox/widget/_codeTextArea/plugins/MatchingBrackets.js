@@ -8,15 +8,16 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets = {
 		var self = this;
 		this.source = source = args.source;
 		this.getX = this.source.getTokenX;
-		dojo.subscribe(source.id + "::writeToken", dojo.hitch(this, self.pushBracket));
+		dojo.subscribe(source.id + "::newToken", dojo.hitch(this, self.pushBracket));
 		dojo.subscribe(source.id + "::CaretMove", dojo.hitch(this, self.setBracketColors));
 		dojo.subscribe(source.id + "::removeCharAtCaret", dojo.hitch(this, self.setBracketColors));
 		dojo.subscribe(source.id + "::fragmentParsed", dojo.hitch(this, self.makeBracketsList));
 	    dojo.subscribe(source.id + "::viewportParsed", dojo.hitch(this, self.makeBracketsList));
 		dojo.subscribe(source.id + "::KeyPressed", dojo.hitch(this, self.gotoMatchingBracket));
 	},
-	isBracket: function(token){
-		return token.getAttribute("tokenType").indexOf("bracket") != -1;
+	isBracket: function(tokenType){
+		tokenType = tokenType || "";
+		return tokenType.indexOf("bracket") != -1;
 	},
 	getBracketType: function(token){
 		var tokenType = token.getAttribute("tokenType");
@@ -43,6 +44,7 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets = {
 		this.setBracketColors();
 	},
 	colorize: function(token){
+		console.log(this.brackets);
 		var bracketType = this.getBracketType(token),
 			status = this.getBracketStatus(token),
 			matchingStatus = status == "open" ? "closed" : "open",
@@ -93,8 +95,10 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets = {
 	},
 	setBracketColors: function(){
 		this.removeColors();
-		var token = this.source.currentToken;
-		if(this.isBracket(token)){
+		var token = this.source.currentToken,
+			tokenType = dojo.attr(token, "tokenType")
+		;
+		if(this.isBracket(tokenType)){
 			this.colorize(token);
 		}
 	},
@@ -116,9 +120,11 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets = {
 		}
 		brackets.splice(i, 0, bracket);
 	},
-	pushBracket:function(){
-		var token = this.source.currentToken;
-		if(this.isBracket(token)){
+	pushBracket:function(args){
+		var token = args.token,
+			tokenType = args.tokenType
+		;
+		if(this.isBracket(tokenType)){
 			this.deleteRemovedBrackets();
 			this.insertBracket(token);
 		}
@@ -128,8 +134,8 @@ dojox.widget._codeTextArea.plugins.MatchingBrackets = {
 			currentBrackets = this.currentBrackets;
 		;
         if(evt.ctrlKey && evt.charCode == 98){ // ctrl + b
-			var token = this.source.currentToken;
-			if(this.isBracket(token)){
+			var tokenType = dojo.attr(this.source.currentToken, "tokenType");
+			if(this.isBracket(tokenType)){
 				var targetToken = null,
 					matchingToken = null
 				;
