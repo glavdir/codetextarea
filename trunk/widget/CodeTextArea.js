@@ -1,4 +1,4 @@
-dojo.provide("dojox.widget.CodeTextArea");
+dojo.provide("nic.widget.CodeTextArea");
 
 dojo.require("dijit._editor.selection");
 dojo.require("dijit._editor.range");
@@ -15,7 +15,7 @@ dojo.declare(
     "nic.widget.CodeTextArea",
 	[dijit._Widget, dijit._Templated],
     {
-		templatePath: dojo.moduleUrl("dojox.widget", "CodeTextArea/CodeTextArea.html"),
+		templatePath: dojo.moduleUrl("nic.widget", "CodeTextArea/CodeTextArea.html"),
         isContainer: true,
 
         // parameters
