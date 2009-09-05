@@ -1,5 +1,5 @@
-dojo.provide("dojox.widget._codeTextArea.plugins.MatchingBrackets");
-dojox.widget._codeTextArea.plugins.MatchingBrackets = {
+dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
+nic.widget._codeTextArea.plugins.MatchingBrackets = {
 	source: null,
 	brackets: [],
 	currentBrackets: [],
