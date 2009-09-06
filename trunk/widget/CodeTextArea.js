@@ -2302,7 +2302,7 @@ dojo.declare(
             for(var i = 0; i < plugins.length; i++){
                 try{
                     if(plugins[i]){
-                        dojox.widget._codeTextArea.plugins[plugins[i]].startup({source:this});
+                        nic.widget._codeTextArea.plugins[plugins[i]].startup({source:this});
                     }
                 }catch(error){
 //                    console.log("plugin \"" + plugins[i] + "\" not found");
