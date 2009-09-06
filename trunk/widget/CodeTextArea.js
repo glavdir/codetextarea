@@ -333,12 +333,12 @@ dojo.declare(
                 hasDownArrow: false,
 				searchAttr: "name"
 			}, comboNode);
-			var dn = this.suggestionsCombo.domNode;
-			var s = dn.style;
+			var dn = this.suggestionsCombo.domNode,
+				s = dn.style
+			;
     		s.position = "absolute";
     		s.display = "none";
     		s.zIndex = "100";
-            s.display = "inline"; // added 10/03/2007
             dojo.connect(dn, "onkeyup", dojo.hitch(this, this.autocomplete));
             dojo.addClass(this.suggestionsCombo.textbox, "suggester");
         },
