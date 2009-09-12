@@ -1,5 +1,6 @@
 dojo.provide("nic.widget.CodeTextArea");
 
+dojo.require("dijit._Contained");
 dojo.require("dijit._editor.selection");
 dojo.require("dijit._editor.range");
 
@@ -13,7 +14,7 @@ dojo.require("dijit.form.ComboBox");
 
 dojo.declare(
     "nic.widget.CodeTextArea",
-	[dijit._Widget, dijit._Templated],
+	[dijit._Widget, dijit._Templated, dijit._Contained],
     {
 		templatePath: dojo.moduleUrl("nic.widget", "CodeTextArea/CodeTextArea.html"),
         isContainer: true,
@@ -21,6 +22,7 @@ dojo.declare(
         // parameters
         height: "100%",
         width: "100%",
+	    parent: null,
         // attach points
         currentLineHighLight: null,
         caret: null,
@@ -224,14 +226,9 @@ dojo.declare(
 				width: "0",
 				height: "0"
 			});
-			if(this.resizeTo){
-				var container = dijit.byId(this.resizeTo);
-				if(container){
-					dojo.connect(container, "resize", function(){
-						var coords = dojo.coords(dojo.byId(self.resizeTo));
-						self.resize({ w:coords.w, h:coords.h });
-					});
-				}
+	        var parent = this.parent = this.getParent();
+			if(parent && parent.isLayoutContainer){
+				this.resize();
 			}
 			this.leftBand.id = this.id + "leftBand";
 			this.lines.style.width = (dojo.coords(this.domNode).w - dojo.coords(this.leftBand).w) + "px";
@@ -309,11 +306,16 @@ dojo.declare(
 			this.selectionStartNode = this.currentToken;
 			this.selectionStartIndex = this.caretIndex;
         },
-		resize: function(args){
-			this.domNode.parentNode.style.width = args.w + "px";
-			this.domNode.style.height = args.h + "px";
-			this.height = args.h;
-			this.width = args.w;
+		resize: function(){
+			var parent = this.parent;
+			if(!parent){
+				return;
+			}
+			var coords = dojo.coords(parent.domNode);
+			this.domNode.parentNode.style.width = coords.w + "px";
+			this.domNode.style.height = coords.h + "px";
+			this.height = coords.h;
+			this.width = coords.w;
 		},
         _initializeSuggestionsPopup: function(){
             var comboNode = document.createElement("div");
