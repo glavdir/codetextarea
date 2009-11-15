@@ -1,6 +1,8 @@
 dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 ;(function(){
-	var source;
+	var source,
+		$ = dojo.query
+	;
 	nic.widget._codeTextArea.plugins.MatchingBrackets = {
 		source: null,
 		brackets: [],
@@ -9,12 +11,13 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 		startup: function(args){
 			var self = this;
 			this.source = source = args.source;
-			this.getX = this.source.getTokenX;
+			this.getX = source.getTokenX;
 			dojo.subscribe(source.id + "::newToken", dojo.hitch(this, self.pushBracket));
 			dojo.subscribe(source.id + "::CaretMove", dojo.hitch(this, self.setBracketColors));
 			dojo.subscribe(source.id + "::removeCharAtCaret", dojo.hitch(this, self.setBracketColors));
 			dojo.subscribe(source.id + "::fragmentParsed", dojo.hitch(this, self.makeBracketsList));
 			dojo.subscribe(source.id + "::viewportParsed", dojo.hitch(this, self.makeBracketsList));
+			dojo.subscribe(source.id + "::KeyPressed", dojo.hitch(this, self.makeBracketsList));
 			dojo.subscribe(source.id + "::KeyPressed", dojo.hitch(this, self.gotoMatchingBracket));
 		},
 		isBracket: function(tokenType){
@@ -37,7 +40,7 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 			currentBrackets.length = 0;
 		},
 		makeBracketsList: function(){
-			var bracketsToAdd = dojo.query("[tokenType$=bracket]", source.domNode);
+			var bracketsToAdd = $("[tokenType$=bracket]", source.domNode);
 			if(!bracketsToAdd.length){
 				return;
 			}
@@ -46,7 +49,6 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 			this.setBracketColors();
 		},
 		colorize: function(token){
-			console.log(this.brackets);
 			var bracketType = this.getBracketType(token),
 				status = this.getBracketStatus(token),
 				matchingStatus = status == "open" ? "closed" : "open",
@@ -87,7 +89,7 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 				i += increment;
 			}
 			if(this.currentBrackets.length == 2){
-				for(var i = 0; i < 2; i++){
+				for(i = 0; i < 2; i++){
 					dojo.addClass(this.currentBrackets[i], "matchingBracket");
 				}
 			}else{
@@ -97,7 +99,7 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 		},
 		setBracketColors: function(){
 			this.removeColors();
-			var token = this.source.currentToken,
+			var token = source.currentToken,
 				tokenType = dojo.attr(token, "tokenType")
 			;
 			if(this.isBracket(tokenType)){
@@ -136,12 +138,14 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 				currentBrackets = this.currentBrackets;
 			;
 			if(evt.ctrlKey && evt.charCode == 98){ // ctrl + b
-				var tokenType = dojo.attr(this.source.currentToken, "tokenType");
+				var token = source.currentToken,
+					tokenType = dojo.attr(token, "tokenType")
+				;
 				if(this.isBracket(tokenType)){
 					var targetToken = null,
 						matchingToken = null
 					;
-					for(var i = 0; i < currentBrackets.length; i++){
+					for(var i = 0, l = currentBrackets.length; i < l; i++){
 						if(currentBrackets[i] === token){
 							matchingToken = currentBrackets[i];
 						}else{
@@ -149,7 +153,7 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 						}
 					}
 					if(targetToken && matchingToken){
-						this.source.setCaretPosition(this.getX(targetToken), this.source.indexOf(targetToken.parentNode));
+						source.setCaretPosition(this.getX(targetToken), source.indexOf(targetToken.parentNode));
 					}
 				}
 			}
