@@ -34,7 +34,7 @@ dojo.provide("nic.widget._codeTextArea.plugins.MatchingBrackets");
 		},
 		removeColors: function(){
 			var currentBrackets = this.currentBrackets;
-			for(var i = 0; i < currentBrackets.length; i++){
+			for(var i = 0, l = currentBrackets.length; i < l; i++){
 				dojo.removeClass(dojo.byId(currentBrackets[i]), "matchingBracket");
 			}
 			currentBrackets.length = 0;
