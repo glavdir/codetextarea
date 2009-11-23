@@ -6,8 +6,6 @@ dojo.require("dijit._editor.range");
 
 dojo.require("dijit._Widget");
 dojo.require("dojo.data.ItemFileReadStore");
-// replace dojox.data.dom.textContent
-//dojo.require("dojox.data.dom");
 dojo.require("dojox.xml.parser");
 dojo.require("dijit._Templated");
 dojo.require("dijit.form.ComboBox");
@@ -311,14 +309,17 @@ dojo.declare(
 			if(!parent){
 				return;
 			}
-			var coords = dojo.coords(parent.domNode);
+			var coords = dojo.position(parent.domNode);
 			this.domNode.parentNode.style.width = coords.w + "px";
 			this.domNode.style.height = coords.h + "px";
 			this.height = coords.h;
 			this.width = coords.w;
 		},
         _initializeSuggestionsPopup: function(){
-            var comboNode = document.createElement("div");
+            var comboNode = document.createElement("div"),
+				store,
+				dn
+			;
             dojo.style(comboNode, {
                 position: "absolute",
                 top: "0",
@@ -326,7 +327,7 @@ dojo.declare(
                 display: "none"
             });
             this.domNode.parentNode.appendChild(comboNode);
-            var store = new dojo.data.ItemFileReadStore({url: this.autocompleteUrl });
+            store = new dojo.data.ItemFileReadStore({url: this.autocompleteUrl });
 
             this.suggestionsCombo = new dijit.form.ComboBox({
 				name: "suggestions",
@@ -335,7 +336,7 @@ dojo.declare(
                 hasDownArrow: false,
 				searchAttr: "name"
 			}, comboNode);
-			var dn = this.suggestionsCombo.domNode;
+			dn = this.suggestionsCombo.domNode;
 	        dojo.style(dn, {
 		        position: "absolute",
 		        display: "none",
@@ -360,7 +361,6 @@ dojo.declare(
             this._clipboard.style.width = "0";
             this._clipboard.style.height = "0";
             document.body.appendChild(this._clipboard);
-//            console.log("clipboard initialized");
         },
 		clearDocument: function(){
 			this.lines.innerHTML = "";
@@ -397,7 +397,7 @@ dojo.declare(
                 sync: true,
                 handleAs: "json-comment-optional",
                 error: function(err){
-                	_self._dictionaryLoadError(err)
+                	_self._dictionaryLoadError(err);
                 },
                 load: function(result){
                 	dojo.hitch(_self, callBack(result));
@@ -422,22 +422,28 @@ dojo.declare(
         },
         _expandAutoCompleteLinks: function(/*Object*/ data){
         	if(data.links){
-        		var links = data.links || [];
+        		var links = data.links || [],
+					linkPath,
+					targetPath,
+					currentLink,
+					currentTarget
+				;
         		// foreach pair (link --> target)
-        		for(var i = 0; i < links.length; i++){
-        			var linkPath = links[i]["link"].split(".");
-        			var targetPath = links[i]["target"].split(".");
-        			var currentLink = data;
-        			var currentTarget = data;
-        			for(var j = 0; j < linkPath.length; j++){
+        		for(var i = 0, ll = links.length; i < ll; i++){
+        			linkPath = links[i]["link"].split(".");
+        			targetPath = links[i]["target"].split(".");
+        			currentLink = data;
+        			currentTarget = data;
+        			for(var j = 0, lp = linkPath.length; j < lp; j++){
         				currentLink = currentLink.children[linkPath[j]];
         			}
         			currentLink = currentLink ? currentLink : data;
-        			for(var j = 0; j < targetPath.length; j++){
+        			for(j = 0, tp = targetPath.length; j < tp; j++){
         				currentTarget = currentTarget.children[targetPath[j]];
         			}
-        			for(var k in currentTarget.children){
-	        			currentLink.children[k] = currentTarget.children[k];
+					var children = currentTarget.children;
+        			for(var k in children){
+	        			currentLink.children[k] = children[k];
         			}
         		}
         	}
@@ -463,7 +469,6 @@ dojo.declare(
             return line ? this.getLineContent(line).length-1 : 0;
         },
 		getLineContent: function(line){
-//			return dojox.data.dom.textContent(line);
 			return dojox.xml.parser.textContent(line);
 		},
         numLines: function(){
@@ -548,8 +553,7 @@ dojo.declare(
         },
 		// two methods from quirksmode.org
 		getUserSelection: function(){
-			var us = window.getSelection ? window.getSelection() : document.selection.createRange();
-			return us;
+			return window.getSelection ? window.getSelection() : document.selection.createRange();
 		},
 		getRange: function(selection){
 			if(selection.getRangeAt){
@@ -577,12 +581,12 @@ dojo.declare(
         },
         clearSelection: function(){
 			var _document = dojo.doc,
-			    r = this._range
+				selection
 			;
 			if(_document.selection && dojo.body().createTextRange){ // IE
 				_document.selection.empty();
 			}else if(dojo.global["getSelection"]){
-				var selection = dojo.global.getSelection();
+				selection = dojo.global.getSelection();
 				if(selection["removeAllRanges"]){ // Mozilla
 					selection.removeAllRanges();
 				}
@@ -593,7 +597,7 @@ dojo.declare(
 			var x = this.getTokenX(token) + index,
 			    y = this.indexOf(token.parentNode)
 			;
-			return {x: x, y: y};
+			return { x: x, y: y };
 		},
         compareTokenPosition: function(/*token*/ fromToken, /*token*/ toToken){
         	// returns:
@@ -666,7 +670,6 @@ dojo.declare(
 			}
 			// 4 cases
 			if((this.compareTokenPosition({token:oldToken, index:oldIndex},{token:newToken,index:newIndex}) == -1)){
-//				console.debug("--> ");
 				if (this.compareTokenPosition({token:newToken, index:newIndex},{token:selectionEndToken,index:selectionEndIndex}) == 1){
 				// 1) |__|-->I
 					this._range.setEnd(newToken.firstChild, newIndex);
@@ -675,7 +678,6 @@ dojo.declare(
 					this._range.setStart(newToken.firstChild, newIndex);
 				}
 			}else{
-//				console.debug("<--");
 				if (this.compareTokenPosition({token:newToken, index:newIndex},{token:selectionStartToken,index:selectionStartIndex}) == -1){
 				// 3) I<--|__|
 					this._range.setStart(newToken.firstChild, newIndex);
@@ -688,10 +690,9 @@ dojo.declare(
         },
         indexOf: function(node){
         	var parent = node.parentNode,
-        	    children = parent.childNodes,
-        	    len = children.length
+        	    children = parent.childNodes
         	;
-        	for(var i = 0; i < len; i++){
+        	for(var i = 0, len = children.length; i < len; i++){
         		if(children[i] === node){
         			return i;
         		}
@@ -721,7 +722,10 @@ dojo.declare(
 			    endOffset = this._range.endOffset,
 			    startLine = startToken.parentNode,
 			    endLine = endToken.parentNode,
-			    currentToken = startToken.nextSibling
+			    currentToken = startToken.nextSibling,
+				currentLine,
+				nextLine,
+				nextToken
 			;
 			this.moveCaretAtToken(startToken, startOffset);
 
@@ -733,7 +737,6 @@ dojo.declare(
 			}else{
 				// startLine begin
 				startToken.firstChild.data = oldContent.substring(0, startOffset);
-				var nextToken;
 				if(currentToken && currentToken !== endToken){ // change in do..while
 					do{
 						nextToken = currentToken.nextSibling;
@@ -745,8 +748,7 @@ dojo.declare(
 
 				// middle lines begin
 				if(this.indexOf(startLine) < this.indexOf(endLine) - 1) {
-					var currentLine = startLine.nextSibling;
-					var nextLine;
+					currentLine = startLine.nextSibling;
 					while(currentLine && (currentLine !== endLine)){
 						nextLine = currentLine.nextSibling;
 						this.removeFromDOM(currentLine);
@@ -789,7 +791,7 @@ dojo.declare(
             	this.mergeSimilarTokens(this.previousToken, this.currentToken);
             }
             this.colorizeToken(this.currentToken);
-			return {data:selectedText}
+			return { data:selectedText };
         },
 		// find a better name for this method
 		removeSelectionWithUndo: function(){
@@ -802,8 +804,6 @@ dojo.declare(
 			    endToken = this._range.endContainer.parentNode,
 			    startOffset = this._range.startOffset,
 			    endOffset = this._range.endOffset,
-			    startLine = startToken.parentNode,
-			    endLine = endToken.parentNode,
 			    selStartCoords = this.getTokenPosition(startToken, startOffset),
 			    selEndCoords = this.getTokenPosition(endToken, endOffset),
 			    changes = this.removeSelection(),
@@ -818,6 +818,9 @@ dojo.declare(
 			});
 		},
         keyPressHandler: function(evt){
+			var changes,
+				kwPar
+			;
 			if(this._blockedEvents) { return; }
             if (this._preventLoops){
                 this._preventLoops = false;
@@ -875,7 +878,7 @@ dojo.declare(
 	                    }else if(y){
 	                       this.setCaretPosition(this.getLineLength(y - 1), y-1);
 	                    }
-	                    var changes = this.removeCharAtCaret();
+	                    changes = this.removeCharAtCaret();
 						if(changes){
 							if(this._pushNextAction ||
 							!this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "removeCharBS"
@@ -911,7 +914,7 @@ dojo.declare(
                         break;
                     }
          			if(!this.getSelection().getSelectedText().length){
-	                    var changes = this.removeCharAtCaret();
+	                    changes = this.removeCharAtCaret();
 						if(changes){
 							if(this._pushNextAction ||
 							!this._undoStack.length || this._undoStack[this._undoStack.length - 1].action != "removeCharDel"
@@ -935,7 +938,7 @@ dojo.declare(
                     if(charCode == 0){
                         if(!lines[y + 1]){ dojo.stopEvent(evt); return; }
                         lineLength = this.getLineLength(y+1);
-						var kwPar = {
+						kwPar = {
 							token: this.currentToken,
 							index: this.caretIndex
 						};
@@ -962,10 +965,10 @@ dojo.declare(
                 case dk.LEFT_ARROW:
                     if(charCode == 0){
                         if(x){
-							var kwPar = {
+							kwPar = {
 								token: this.currentToken,
 								index: this.caretIndex
-							}
+							};
                             this.setCaretPosition(x-1, y);
 	                        if(evt.shiftKey){
 	                        	this.addToSelection(kwPar);
@@ -983,10 +986,10 @@ dojo.declare(
                 case dk.RIGHT_ARROW:
                     if(charCode == 0){
                         if(x < this.getLineLength(y)){
-							var kwPar = {
+							kwPar = {
 								token: this.currentToken,
 								index: this.caretIndex
-							}
+							};
                             this.setCaretPosition(x + 1, y);
                             if(evt.shiftKey){
                             	this.addToSelection(kwPar);
@@ -1008,10 +1011,10 @@ dojo.declare(
                             return;
                         }
                         var lineLength = this.getLineLength(y-1);
-						var kwPar = {
+						kwPar = {
 							token: this.currentToken,
 							index: this.caretIndex
-						}
+						};
 
                         this.setCaretPosition(x < lineLength ? x : lineLength, y-1);
                         if(evt.shiftKey){
@@ -1067,8 +1070,6 @@ dojo.declare(
 						this._undoStack[this._undoStack.length - 1].coords = {x: this.x, y: this.y}; // not used, remove
 					}
 		            this._lastEditCoords = { x: this.x, y: this.y };
-                break;
-                case dk.LEFT_WINDOW:
                 break;
                 case dk.RIGHT_WINDOW:
                 break;
