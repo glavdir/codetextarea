@@ -1507,7 +1507,6 @@ dojo.declare(
 
 			var w = this.getWidth(),
 				h = this.getHeight(),
-				dim1 = (new Date()).getTime(),
 				_yLim =_yPx + 2*this.lineHeight
 			;
             if(_yLim >= h + this.domNode.scrollTop){
@@ -1578,7 +1577,7 @@ dojo.declare(
 	    },
         setDimensions: function(){
 			var coords = dojo.coords(this.domNode);
-            this._caretWidth = dojo.contentBox(this.caret).w;
+            this._caretWidth = dojo.style(this.caret, "width");
             this.lineHeight = dojo.contentBox(this.currentLineHighLight).h;
             this.width = coords.w;
             this.height = coords.h;
