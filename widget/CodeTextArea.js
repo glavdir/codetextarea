@@ -1140,7 +1140,7 @@ dojo.declare(
                     }
                 break;
                 case 32: // space
-                    if(!evt.ctrlKey){
+                    if(!evt.ctrlKey && !evt.shiftKey){
                         this._specialKeyPressed = false;
                     }else{
                         this._suggestionBlocked = true;
