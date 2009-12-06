@@ -2171,7 +2171,7 @@ dojo.declare(
                 // the replace fixes the separators on IE
             	container.outerHTML = newContent.replace(/\s/g, "&nbsp;");
             }
-			(rowsNum) && this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
+			rowsNum && this._addRowNumber({position: _insertionPoint, rows: _yIncrement});
             if(rowsNum > 1){
                 var _delimiters = dojo.query(".dojoCodeTextAreaLines i", this.domNode); // use a better query
                 this.removeFromDOM(_delimiters[0]);
@@ -2181,7 +2181,7 @@ dojo.declare(
                 nextX = nextY ? rowLen - this.x : rowLen
             ;
 			this.parseLine({ lineIndex: this.y, force: true });
-            (nextY) && this.parseLine({ lineIndex: this.y + nextY, force: true });
+            nextY && this.parseLine({ lineIndex: this.y + nextY, force: true });
 			this.moveCaretBy(nextX, nextY);
 			//this._removeDelimiter(_delimiters[1]);
 
@@ -2347,9 +2347,11 @@ dojo.declare(
 			this.removeFromDOM(root.getElementsByTagName("li")[rowsToRemove.position + 1]);
 		},
         _addRowNumber: function(/*integer*/ rowsToAdd){
-			var root = this.leftBand.getElementsByTagName("ol")[0];
-			for(var i = 0; i < rowsToAdd.rows - 1; i++){
-				var number = document.createElement("li");
+			var root = this.leftBand.getElementsByTagName("ol")[0],
+                number
+            ;
+			for(var i = 0, l = rowsToAdd.rows - 1; i < l; i++){
+				number = document.createElement("li");
 				root.appendChild(number);
 			}
         },
