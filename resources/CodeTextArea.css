@@ -43,7 +43,12 @@ table.dojoCodeTextAreaWrapper tr, table.dojoCodeTextAreaWrapper tr td{
     border:0;
     padding-bottom: 0;
     /*IE trick...*/
-    .padding-bottom: 1px;
+    /*.padding-bottom: 1px;*/
+    height:17px;
+    width:0;
+    display:list-item;
+    font:13px monospace;
+    text-align:right;
 }
 .dojoCodeTextAreaBand div.bookmark{
 	position:absolute;
